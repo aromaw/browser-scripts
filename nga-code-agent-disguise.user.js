@@ -318,7 +318,7 @@
         /* Icon rail: boards and favorites stay one click away, labels go. */
         .cad-side { width:64px; padding:12px 6px 14px; }
         .cad-side .cad-brand span, .cad-side-label, .cad-side-footmeta,
-        .cad-newbtn span + span, .cad-side a span, .cad-side button.cad-sideitem span,
+        .cad-newbtn span + span, .cad-side a span:not(.cad-side-dot), .cad-side button.cad-sideitem span,
         .cad-side div.cad-sideitem { display:none; }
         .cad-side a, .cad-side button.cad-sideitem { justify-content:center; padding:7px 0; }
         .cad-newbtn { justify-content:center; }
@@ -4185,6 +4185,13 @@
         return out.slice(0, 8);
     }
 
+    // One predicate for the home search, shared by the typing fast path
+    // (filterHome) and the render path: what is shown always derives from
+    // homeQuery, so any re-render (theme switch, save) cannot desync it.
+    function homeMatches(b, needle) {
+        return !needle || ((b.name + ' ' + b.fid).toLowerCase().includes(needle));
+    }
+
     // Filter without re-rendering: toggling display keeps focus in the search box.
     function filterHome(q) {
         homeQuery = q;
@@ -4194,8 +4201,7 @@
         let shown = 0, total = 0;
         rootEl.querySelectorAll('.cad-board-card').forEach(card => {
             total++;
-            const hay = ((card.dataset.name || '') + ' ' + (card.dataset.fid || '')).toLowerCase();
-            const hit = !needle || hay.includes(needle);
+            const hit = homeMatches({ name: card.dataset.name || '', fid: card.dataset.fid || '' }, needle);
             card.style.display = hit ? '' : 'none';
             if (hit) shown++;
         });
@@ -4223,9 +4229,16 @@
             .map(g => ({ name: g.name, boards: g.boards.filter(b => !mineIds.has(String(b.fid))) }))
             .filter(g => g.boards.length);
         const total = favorites.length + saved.length + recent.length + groups.reduce((a, g) => a + g.boards.length, 0);
+        // Card visibility and the count derive from homeQuery at render time,
+        // so they survive any re-render (theme switch included).
+        const needle = homeQuery.trim().toLowerCase();
+        const shown = favorites.filter(b => homeMatches(b, needle)).length
+            + saved.filter(b => homeMatches(b, needle)).length
+            + recent.filter(b => homeMatches(b, needle)).length
+            + groups.reduce((a, g) => a + g.boards.filter(b => homeMatches(b, needle)).length, 0);
         const boardCard = b => {
             const isSaved = saved.some(s => String(s.fid) === String(b.fid));
-            return html`<div class="cad-board-card" data-name=${b.name} data-fid=${b.fid}>
+            return html`<div class="cad-board-card" data-name=${b.name} data-fid=${b.fid} style=${homeMatches(b, needle) ? '' : 'display:none'}>
                 <a href=${'/thread.php?fid=' + encodeURIComponent(b.fid)} title=${'fid ' + b.fid}>
                     <span class="cad-board-name">${b.name}</span>
                     <span class="cad-board-fid">fid ${b.fid}</span>
@@ -4233,7 +4246,7 @@
                 <button type="button" class="cad-board-save" disabled=${isSaved} title=${isSaved ? 'Saved to sidebar' : 'Save to sidebar'} onClick=${() => saveHomeBoard(b.fid, b.name)}>${isSaved ? 'Saved ✓' : '+ Save'}</button>
             </div>`;
         };
-        const section = (label, list, key) => list.length ? html`<div class="cad-home-sect" key=${key}>
+        const section = (label, list, key) => list.length ? html`<div class="cad-home-sect" key=${key} style=${list.some(b => homeMatches(b, needle)) ? '' : 'display:none'}>
             <div class="cad-line"><span class="cad-sect">${label}</span></div>
             <div class="cad-board-grid">${list.map(boardCard)}</div>
         </div>` : null;
@@ -4248,7 +4261,7 @@
                     ref=${el => { if (el && !homeFocused) { homeFocused = true; el.focus(); } }}
                     onInput=${e => filterHome(e.target.value)} />
             </div>
-            <div class="cad-home-count">${total ? total + ' boards' : ''}</div>
+            <div class="cad-home-count">${total ? (needle ? (shown ? shown + ' of ' + total + ' boards' : 'No boards match "' + homeQuery.trim() + '"') : total + ' boards') : ''}</div>
             ${section('Favorite boards', favorites, 'favorites')}
             ${section('Saved', saved, 'saved')}
             ${section('Recent', recent, 'recent')}
@@ -4508,7 +4521,7 @@
             </button>
             <a class=${lastData && lastData.kind === 'home' ? 'cad-onitem' : ''} href="/" title="Boards home"><${HomeIcon} /><span>Home</span></a>
             <div class="cad-side-label">Boards</div>
-            ${boardList.length ? boardList.map(b => html`<a class=${String(b.fid) === cur ? 'cad-onitem' : ''} href=${'/thread.php?fid=' + encodeURIComponent(b.fid)} title=${'fid ' + b.fid}>${store.style === 'claude' ? html`<${FolderIcon} />` : html`<span class="cad-side-dot"></span>`}<span>${b.name}</span></a>`) : html`<button type="button" class="cad-sideitem" onClick=${() => runCmd('board add')}><span>Save this board</span></button>`}
+            ${boardList.length ? boardList.map(b => html`<a class=${String(b.fid) === cur ? 'cad-onitem' : ''} href=${'/thread.php?fid=' + encodeURIComponent(b.fid)} title=${b.name + ' · fid ' + b.fid}>${store.style === 'claude' ? html`<${FolderIcon} />` : html`<span class="cad-side-dot"></span>`}<span>${b.name}</span></a>`) : html`<button type="button" class="cad-sideitem" onClick=${() => runCmd('board add')}><span>Save this board</span></button>`}
             ${cur && !boardList.some(b => String(b.fid) === cur) ? html`<button type="button" class="cad-sideitem" onClick=${() => runCmd('board add')}><span>Save this board</span></button>` : null}
             <div class="cad-side-label">Favorites</div>
             ${favs.length ? favs.slice(0, 16).map(t => html`<a href=${t.href || ('/read.php?tid=' + encodeURIComponent(t.tid))} title=${t.title}><${StarIcon} /><span>${t.title}</span></a>`) : html`<div class="cad-sideitem cad-dim"><span>bookmark a thread, or open your favorites</span></div>`}

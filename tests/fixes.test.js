@@ -1042,6 +1042,29 @@ test('typing in the home search filters board cards without losing focus', () =>
     assert.equal(visible().length, 9);
 });
 
+test('switching themes keeps the home search filter and count', async () => {
+    const { window, document, cad } = load(liveIndex, 'https://bbs.nga.cn/', { cad_on: true });
+    cad.boot();
+    const input = document.querySelector('.cad-home-search');
+    const visible = () => [...document.querySelectorAll('.cad-board-card')].filter(c => c.style.display !== 'none');
+    input.value = '原神';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    assert.equal(visible().length, 1);
+    // A theme switch re-renders the picker: visibility and the count must
+    // derive from the query still in the box, not reset to show-all.
+    await cad.runCmd('codex');
+    assert.equal(cad.getLastData().kind, 'home');
+    assert.equal(document.querySelector('.cad-home-search').value, '原神');
+    assert.equal(visible().length, 1);
+    assert.equal(visible()[0].dataset.fid, '650');
+    assert.match(document.querySelector('.cad-home-count').textContent, /1 of 9 boards/);
+    // The filter still works after the switch.
+    input.value = '';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    assert.equal(visible().length, 9);
+    assert.match(document.querySelector('.cad-home-count').textContent, /9 boards/);
+});
+
 test('pressing / on the picker focuses the board search', () => {
     const { window, document, cad } = load(liveIndex, 'https://bbs.nga.cn/', { cad_on: true });
     cad.boot();
