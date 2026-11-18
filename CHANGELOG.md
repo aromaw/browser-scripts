@@ -1,5 +1,143 @@
 # Changelog
 
+## 4.1.7 — 2026-11-18
+
+### Added: "Favorite boards" module on the home page
+
+- The home page now leads with a **Favorite boards** section: the boards
+  the viewer favorited on NGA itself, read from the page's own favorites
+  block (`#favorite_forums` / `#favor_forums`). This is separate from
+  Saved, which is the script's local list (`board add` / + Save).
+- Favorited boards move out of their category groups (and out of Recent),
+  the same way saved boards do, so each board shows once in the "mine"
+  sections. A board that is both favorited and saved appears in both
+  modules; its card shows "Saved ✓" either way.
+- When the current page has no favorites block (e.g. `home` from a thread
+  page, or logged out), the module is hidden instead of showing stale or
+  invented data.
+
+## 4.1.6 — 2026-11-18
+
+### Added: Boards home page (NGA front page)
+
+- The NGA front page (`/` and `/index.php`) now renders a board picker
+  instead of the idle view. Boards are grouped by their category heading
+  on the live index page; Saved boards and Recently visited boards get
+  their own sections first.
+- The page is a Codex-style centered home in both themes: a big "Boards"
+  title, a centered search box (560px, composer-styled, autofocused),
+  then grouped board cards. Search filters by name or fid as you type
+  (no re-render, so the box keeps focus) and shows a "N of M boards"
+  count; `/` focuses the search from anywhere on the page.
+- Each card shows the board name and fid and links to
+  `/thread.php?fid=…`. A "+ Save" button stores the board in the sidebar
+  list (the same list `board list` manages); saved boards move out of
+  their group into Saved, and the button becomes "Saved ✓".
+- `home` opens the picker in place from any page (no navigation); the
+  sidebar has a Home entry that links to `/`. On the picker the top-bar
+  sort pill is hidden (there is no list to sort) and Next is disabled.
+- The parser is defensive: it groups links by the last heading that
+  precedes them, skips nav/user/favorites chrome, junk names, and
+  parameterized links (favor/page/order_by/…), and never invents a board
+  — an unknown board name stays as "fid N", and an index with no groups
+  shows an empty state with the `board fid` fallback. The script's own
+  rendered output (`#cad__root`) is excluded from the scan, so the
+  picker cannot re-parse its own sidebar links as boards. The index page
+  has no current board, so `pageFid()` returns empty there instead of
+  promoting the last nav link.
+
+## 4.1.5 — 2026-11-17
+
+### Changed: themes now follow the real desktop apps (1:1 pass)
+
+- **Codex theme follows Codex's shipped CSS tokens.** Dark: page `#0d0d0d`,
+  primary surface `#212121`, secondary `#181818`, tertiary `#131313`, text
+  `#dfdfdf`; light: page `#ffffff`, surfaces `#f9f9f9` / `#f3f3f3`, text
+  `#1a1c1f`. Accent is now the Codex blue `#339cff` (dark) / `#0285ff`
+  (light), used only for links, focus, and active states. Diff green is
+  `#40c977` / `#00a240`. Sidebar is the token-preferred 275px.
+- **Claude theme follows Claude's verified canvas/clay values.** Dark canvas
+  `#151515`, light canvas `#fcfcfb`, light text `#0b0b0b`, secondary
+  `#52514e`, muted `#898781`; brand clay `#c6613f` (light) / `#d97757`
+  (dark); light links use the verified blue `#184f95`.
+- **Both themes are flat flows now**, like the real apps: replies are
+  separated by hairline rules, not cards or a left rail (Codex lost its
+  2px left border). The OP post stays a card — the "user turn" — on the
+  primary surface.
+- **Composer matches the desktop pattern.** Claude's box is 14px radius,
+  Codex's stays a squircle 18px; the footer is now a slim control row
+  separated from the input by a hairline, with the model picker at the
+  right. Codex's send button was already inverted monochrome
+  (white bg/black text on dark, black bg/white text on light) and now
+  matches the light token too.
+- **Sidebar "New" button is a ghost button** in both themes, like the real
+  apps' + New; sidebar items are 13px; the top-bar title is 14px/650.
+- Hardcoded clay/green tints in the OP badge and bot avatar are now
+  theme-aware (`color-mix` / `--band`), so they follow the active theme.
+- Borders are hairlines (8% foreground opacity) in all four theme/mode
+  combinations; the drawer follows the theme's sidebar width.
+
+### Readability (deliberate deviations from the originals)
+
+- Post text stays 14px / line-height 1.7 instead of Codex's 13px / 1.5.
+- Secondary text never goes below `#8f8f8f` (dark) / `#5d5d5d` (light);
+  the composer placeholder keeps its faint color at 0.75 opacity instead
+  of the dim hint text the real Claude app was flagged for.
+- Content column stays capped at 110ch.
+- Brand fonts (anthropic-sans, OpenAI Sans) are not distributable, so the
+  system font stack is kept.
+
+## 4.1.4 — 2026-11-17
+
+### Fixed: autopage (自动切页)
+
+- **Stopped the runaway fetch past the last page.** `appendPage` used to
+  synthesize `page+1` whenever the fetched page's pager had no 下一页 link —
+  but the last page legitimately has no 下一页, so scrolling to the bottom of
+  any multi-page thread fetched a nonexistent next page. Now `page+1` is only
+  synthesized when the fetched page number is below a known page maximum
+  (from either pager), or when both pagers are completely empty.
+- **Guessed-page failures no longer latch the error state.** A failed
+  `page+1` guess (HTTP error, network error, or 15s timeout) now ends the
+  list silently ("End of pages") instead of showing "Could not load the next
+  page. Retry" forever. Failures of a real pager-linked next page still show
+  the Retry card.
+- **Re-enabling autopage retries.** The `autopage` command now clears
+  `autoPageError` when turning autopage back on.
+- **Refresh no longer duplicates pushed posts.** The tail merge in `refresh()`
+  now dedupes appended posts by post id, the same way topics were already
+  deduped by href.
+- **Manual Next/Prev respect page bounds.** `pageNav` returns early past the
+  known first/last page; TopBar Prev/Next are disabled (with `aria-label`)
+  on the first/last page.
+
+### UI / animation / layout
+
+- Loading state: "Loading page N…" plus two shimmer skeleton post cards
+  (`.cad-skel`, `cad-shimmer`).
+- Error state: a card with **Retry** and **Turn autopage off** buttons.
+- End state: a footer "End of pages · X of Y pages" with a **Back to top ↑**
+  smooth-scroll button.
+- Page separators now carry counts ("page 2 · 25 posts") and fade in once
+  (`cad-fade-up`); appended posts use `content-visibility: auto` so very long
+  auto-loaded lists stay cheap to scroll.
+- Smooth scrolling on the main column; all animation/smooth-scroll gated
+  behind `@media (prefers-reduced-motion: no-preference)`.
+- Responsive sidebar: ≤1100px collapses to a 64px icon rail (labels hidden);
+  ≤760px hides the sidebar and exposes it as a 256px overlay drawer toggled
+  by a ☰ button in the TopBar (visible only at that width).
+- Disabled Prev/Next are visibly dimmed.
+
+### Tests
+
+- 6 new tests in `tests/fixes.test.js` ("auto-page (4.1.4)"): stops at the
+  last page with exactly the expected fetches, guessed-page failure ends
+  silently, pager-linked failure shows Retry and Retry works, refresh does
+  not duplicate a pushed floor, Prev/Next disabled at the bounds,
+  re-enabling autopage retries after a failure.
+- Updated the pre-existing timed-out-page test in `tests/disguise.test.js`
+  to click the new "Retry" button.
+
 ## 4.1.3
 
 Author names on live read.php pages are stored as `UID:…` in both `commonui.userInfo.setAll` and `#postauthorN`. The ucp API that 4.1.2 used as a fallback returns HTTP 503. Favorite titles were still garbled because a previous GBK-as-UTF-8 cache (`[��¼��]…`) was kept.

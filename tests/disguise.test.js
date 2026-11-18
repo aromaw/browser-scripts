@@ -170,7 +170,7 @@ test('does not swallow keys in fields or during IME composition', async () => {
     assert.equal(onBody.defaultPrevented, true);
     assert.equal(cad.store.on, true);
 
-    const live = load(emptyHtml, 'https://bbs.nga.cn/', { cad_on: true });
+    const live = load(emptyHtml, 'https://bbs.nga.cn/thread.php?fid=7', { cad_on: true });
     live.cad.boot();
     await new Promise(resolve => setTimeout(resolve, 0));
     const input = live.document.querySelector('.cad-real');
@@ -383,7 +383,7 @@ test('a timed-out next page leaves a retry instead of a permanent spinner', asyn
     assert.equal(fetches, 1);
     assert.match(document.body.textContent, /Could not load the next page/);
     assert.equal(document.body.textContent.includes('Loading the next page'), false);
-    [...document.querySelectorAll('button')].find(button => /Could not load the next page/.test(button.textContent)).click();
+    [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Retry').click();
     await new Promise(resolve => realSetTimeout(resolve, 30));
     assert.equal(fetches, 2);
 });
