@@ -770,3 +770,319 @@ test('a garbled favorites cache is dropped, and a GBK favor page is stored with 
     const fromFav = cad.parseUserInfoMap(window.document);
     assert.equal(fromFav['99'] || cad.nameCache['99'], 'BigCat');
 });
+
+/* ================= auto-page (4.1.4) ================= */
+
+// A thread page with `floors` on it, built by cloning the floor-2 box of the
+// live fixture and renumbering its anchors, so each floor parses distinctly.
+function threadPage(pageNo, floors, { hasNext = true, maxPage = 3, pager = true } = {}) {
+    const boxes = liveThread.match(/<table class="forumbox postbox" cellspacing="1px">[\s\S]*?<\/table>/g);
+    const tpl = boxes[2];
+    const html = floors.map(f => tpl
+        .replace(/post1strow2/g, 'post1strow' + f)
+        .replace(/postcontainer2/g, 'postcontainer' + f)
+        .replace(/postauthor2/g, 'postauthor' + f)
+        .replace(/postcontent2/g, 'postcontent' + f)
+        .replace(/postdate2/g, 'postdate' + f)
+        .replace(/pid557Anchor/g, 'pid' + (600 + f) + 'Anchor')
+        .replace(/name="l2"/g, 'name="l' + f + '"')
+    ).join('\n');
+    const nums = Array.from({ length: maxPage }, (_, i) => i + 1)
+        .map(n => `<a href="/read.php?tid=9&amp;page=${n}">${n}</a>`).join('');
+    const pagerHtml = pager
+        ? `<div id="m_pbtnbtm">${pageNo > 1 ? `<a href="/read.php?tid=9&amp;page=${pageNo - 1}">上一页</a>` : ''}${nums}${hasNext ? `<a href="/read.php?tid=9&amp;page=${pageNo + 1}">下一页</a>` : ''}</div>`
+        : '<div id="m_pbtnbtm"></div>';
+    return liveThread
+        .replace(/<table class="forumbox postbox" cellspacing="1px">[\s\S]*?<\/table>\s*<table class="forumbox postbox" cellspacing="1px">[\s\S]*?<\/table>\s*<table class="forumbox postbox" cellspacing="1px">[\s\S]*?<\/table>/, html)
+        .replace(/<div id="m_pbtnbtm">[\s\S]*?<\/div>/, pagerHtml);
+}
+
+function pageResponse(html, status = 200) {
+    return {
+        ok: status >= 200 && status < 300,
+        status,
+        url: '',
+        headers: { get: () => 'text/html; charset=utf-8' },
+        arrayBuffer: async () => new TextEncoder().encode(html).buffer,
+    };
+}
+
+// fetch stub for read.php pages: `pages` maps page number -> html or status.
+// nuke.php (names/locations) and the favorites fetch keep the dummy answers
+// the shared load() helper uses.
+function stubPageFetch(window, pages, onFetch) {
+    window.fetch = async (input) => {
+        const href = String(input && input.url ? input.url : input);
+        if (onFetch) onFetch(href);
+        if (href.includes('nuke.php')) {
+            return {
+                ok: true, status: 200, url: href,
+                headers: { get: () => 'application/json' },
+                json: async () => ({ data: [{ ipLoc: 'local' }] }),
+                arrayBuffer: async () => new TextEncoder().encode('{}').buffer,
+            };
+        }
+        if (href.includes('thread.php?favor=1')) {
+            return pageResponse('<html><body><div id="m_threads"></div></body></html>');
+        }
+        const m = href.match(/read\.php\?tid=9(?:&amp;|&)page=(\d+)/) || href.match(/page=(\d+)/);
+        const n = m ? +m[1] : 0;
+        const hit = pages[n];
+        if (typeof hit === 'number') return pageResponse('', hit);
+        if (typeof hit === 'string') return pageResponse(hit);
+        return pageResponse('', 404);
+    };
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const shownFloors = document => [...document.querySelectorAll('.cad-post .cad-floor')].map(e => e.textContent);
+
+test('auto-load stops at the last page instead of guessing page+1', async () => {
+    const fetches = [];
+    const { window, document, cad } = load(threadPage(1, [0, 1, 2]), 'https://bbs.nga.cn/read.php?tid=9&page=1', { cad_on: true, cad_autopage: true });
+    stubPageFetch(window, {
+        2: threadPage(2, [3, 4, 5], { hasNext: true, maxPage: 3 }),
+        3: threadPage(3, [6, 7, 8], { hasNext: false, maxPage: 3 }),
+    }, href => { if (href.includes('read.php')) fetches.push(href); });
+    cad.boot();
+    await sleep(1000);
+    assert.deepEqual(fetches.map(h => (h.match(/page=(\d+)/) || [])[1]), ['2', '3']);
+    assert.equal(document.querySelectorAll('.cad-post').length, 9);
+    assert.deepEqual(shownFloors(document), ['#0', '#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8']);
+    assert.match(document.body.textContent, /End of pages · 3 of 3 pages/);
+    assert.equal(cad.getAutoPage().error, false);
+    assert.equal(cad.getAutoPage().next, null);
+    // A later scroll check must not fetch anything more.
+    cad.maybeAutoLoad();
+    await sleep(100);
+    assert.equal(fetches.length, 2);
+});
+
+test('a failed guessed page+1 ends the list instead of latching the retry error', async () => {
+    const fetches = [];
+    const { window, document, cad } = load(threadPage(1, [0, 1, 2]), 'https://bbs.nga.cn/read.php?tid=9&page=1', { cad_on: true, cad_autopage: true });
+    // Page 2's pager has numbers but no 下一页 link, so page 3 is only a
+    // guess — and the server says it does not exist.
+    stubPageFetch(window, {
+        2: threadPage(2, [3, 4, 5], { hasNext: false, maxPage: 3 }),
+        3: 404,
+    }, href => { if (href.includes('read.php')) fetches.push(href); });
+    cad.boot();
+    await sleep(1000);
+    assert.deepEqual(fetches.map(h => (h.match(/page=(\d+)/) || [])[1]), ['2', '3']);
+    assert.equal(document.querySelectorAll('.cad-post').length, 6);
+    assert.equal(cad.getAutoPage().error, false);
+    assert.equal(cad.getAutoPage().next, null);
+    assert.match(document.body.textContent, /End of pages/);
+    assert.equal(document.body.textContent.includes('Could not load the next page'), false);
+    cad.maybeAutoLoad();
+    await sleep(100);
+    assert.equal(fetches.length, 2);
+});
+
+test('a failed pager-linked next page still shows Retry, and Retry works', async () => {
+    const fetches = [];
+    const { window, document, cad } = load(threadPage(1, [0, 1, 2], { maxPage: 2 }), 'https://bbs.nga.cn/read.php?tid=9&page=1', { cad_on: true, cad_autopage: true });
+    let p2Fails = true;
+    stubPageFetch(window, {
+        2: threadPage(2, [3, 4, 5], { hasNext: false, maxPage: 2 }),
+    }, href => { if (href.includes('read.php')) fetches.push(href); });
+    const realFetch = window.fetch;
+    window.fetch = async (input) => {
+        const href = String(input && input.url ? input.url : input);
+        if (href.includes('read.php') && /page=2/.test(href) && p2Fails) {
+            fetches.push(href);
+            return pageResponse('', 500);
+        }
+        return realFetch(input);
+    };
+    cad.boot();
+    await sleep(400);
+    assert.equal(cad.getAutoPage().error, true);
+    assert.match(document.body.textContent, /Could not load the next page/);
+    assert.equal(fetches.length, 1);
+    p2Fails = false;
+    [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Retry').click();
+    await sleep(400);
+    assert.equal(cad.getAutoPage().error, false);
+    assert.equal(fetches.length, 2);
+    assert.equal(document.querySelectorAll('.cad-post').length, 6);
+    assert.match(document.body.textContent, /End of pages · 2 of 2 pages/);
+});
+
+test('refresh does not duplicate a floor pushed onto the next page', async () => {
+    const { window, document, cad } = load(threadPage(1, [0, 1, 2]), 'https://bbs.nga.cn/read.php?tid=9&page=1', { cad_on: true, cad_autopage: false });
+    stubPageFetch(window, { 2: threadPage(2, [3, 4, 5], { hasNext: false, maxPage: 2 }) });
+    cad.boot();
+    cad.loadNextPage();
+    await sleep(200);
+    assert.equal(document.querySelectorAll('.cad-post').length, 6);
+    // A new reply arrives: the live page-1 DOM now also carries floor 3.
+    const doc2 = new window.DOMParser().parseFromString(threadPage(2, [3, 4, 5], { hasNext: false, maxPage: 2 }), 'text/html');
+    const box3 = doc2.querySelector('.forumbox.postbox');
+    document.querySelector('#m_posts').appendChild(document.importNode(box3, true));
+    cad.refresh(true);
+    assert.equal(document.querySelectorAll('.cad-post').length, 6);
+    assert.deepEqual(shownFloors(document), ['#0', '#1', '#2', '#3', '#4', '#5']);
+});
+
+test('Prev is disabled on page 1 and Next is disabled on the last page', () => {
+    const first = load(threadPage(1, [0, 1, 2]), 'https://bbs.nga.cn/read.php?tid=9&page=1', { cad_on: true });
+    first.cad.boot();
+    const topBtns = [...first.document.querySelectorAll('.cad-topbar-btn')];
+    assert.equal(topBtns.find(b => b.textContent.includes('Prev')).disabled, true);
+    assert.equal(topBtns.find(b => b.textContent.includes('Next')).disabled, false);
+
+    const last = load(threadPage(3, [6, 7, 8], { hasNext: false, maxPage: 3 }), 'https://bbs.nga.cn/read.php?tid=9&page=3', { cad_on: true });
+    last.cad.boot();
+    const lastBtns = [...last.document.querySelectorAll('.cad-topbar-btn')];
+    assert.equal(lastBtns.find(b => b.textContent.includes('Prev')).disabled, false);
+    assert.equal(lastBtns.find(b => b.textContent.includes('Next')).disabled, true);
+});
+
+test('re-enabling autopage after a failure retries instead of staying latched', async () => {
+    const fetches = [];
+    const { window, document, cad } = load(threadPage(1, [0, 1, 2], { maxPage: 2 }), 'https://bbs.nga.cn/read.php?tid=9&page=1', { cad_on: true, cad_autopage: true });
+    let p2Fails = true;
+    stubPageFetch(window, {
+        2: threadPage(2, [3, 4, 5], { hasNext: false, maxPage: 2 }),
+    }, href => { if (href.includes('read.php')) fetches.push(href); });
+    const realFetch = window.fetch;
+    window.fetch = async (input) => {
+        const href = String(input && input.url ? input.url : input);
+        if (href.includes('read.php') && /page=2/.test(href) && p2Fails) {
+            fetches.push(href);
+            return pageResponse('', 500);
+        }
+        return realFetch(input);
+    };
+    cad.boot();
+    await sleep(400);
+    assert.equal(cad.getAutoPage().error, true);
+    p2Fails = false;
+    await cad.runCmd('autopage');
+    await cad.runCmd('autopage');
+    await sleep(400);
+    assert.equal(cad.getAutoPage().error, false);
+    assert.equal(fetches.length, 2);
+    assert.equal(document.querySelectorAll('.cad-post').length, 6);
+});
+
+/* home board picker (4.1.6) */
+const liveIndex = fs.readFileSync(path.join(__dirname, 'fixtures', 'live-nga-index.html'), 'utf8');
+
+test('extractHome groups boards by category and skips nav, favorites, and junk links', () => {
+    const { cad } = load(liveIndex, 'https://bbs.nga.cn/');
+    const data = cad.extractHome();
+    assert.equal(data.kind, 'home');
+    assert.equal(data.groups.length, 3);
+    assert.deepEqual(JSON.parse(JSON.stringify(data.groups.map(g => g.name))), ['综合讨论', '游戏', '影音娱乐']);
+    assert.deepEqual(JSON.parse(JSON.stringify(data.groups[0].boards)), [
+        { fid: '7', name: '网事杂谈' },
+        { fid: '8', name: '闲聊灌水' },
+        { fid: '9', name: '新人报道' },
+    ]);
+    assert.deepEqual(JSON.parse(JSON.stringify(data.groups[1].boards.map(b => b.fid))), ['310', '650', '510']);
+    assert.deepEqual(JSON.parse(JSON.stringify(data.groups[2].boards.map(b => b.fid))), ['422', '123']);
+    const allFids = data.groups.flatMap(g => g.boards.map(b => b.fid));
+    assert.equal(allFids.includes('999'), false);
+    assert.equal(allFids.includes('888'), false);
+    // NGA favorites come from the page's own favorites block, not the groups.
+    assert.deepEqual(JSON.parse(JSON.stringify(data.favorites)), [
+        { fid: '7', name: '网事杂谈' },
+        { fid: '310', name: '守望先锋' },
+        { fid: '888', name: '论坛事务' },
+    ]);
+    assert.equal(cad.isIndexPage(), true);
+});
+
+test('booting on the NGA index renders the board picker', () => {
+    const { document, cad } = load(liveIndex, 'https://bbs.nga.cn/', { cad_on: true });
+    cad.boot();
+    assert.equal(cad.getLastData().kind, 'home');
+    assert.ok(document.querySelector('.cad-home-search'));
+    assert.equal(document.querySelectorAll('.cad-board-card').length, 9);
+    assert.match(document.body.textContent, /综合讨论/);
+    assert.match(document.body.textContent, /影音娱乐/);
+    assert.match(document.querySelector('.cad-home-count').textContent, /9 boards/);
+    // Favorite boards lead, and favorited boards leave their groups.
+    const favSect = [...document.querySelectorAll('.cad-home-sect')].find(s => s.textContent.includes('Favorite boards'));
+    assert.equal(favSect.querySelectorAll('.cad-board-card').length, 3);
+    const firstGroup = document.querySelectorAll('.cad-home-sect')[1];
+    assert.equal(firstGroup.querySelectorAll('.cad-board-card').length, 2);
+    assert.equal(document.querySelector('.cad-home-search'), document.activeElement);
+    // Nav boards may appear in the sidebar, but the highlighted item is Home, not a board.
+    assert.match(document.querySelector('.cad-side .cad-onitem').textContent, /Home/);
+    assert.equal(document.querySelector('.cad-side a[href*="thread.php"].cad-onitem'), null);
+    // No sort pill on the picker: there is no board list to sort.
+    assert.equal([...document.querySelectorAll('button.cad-pill')].some(b => b.textContent.includes('latest')), false);
+});
+
+test('typing in the home search filters board cards without losing focus', () => {
+    const { window, document, cad } = load(liveIndex, 'https://bbs.nga.cn/', { cad_on: true });
+    cad.boot();
+    const input = document.querySelector('.cad-home-search');
+    const visible = () => [...document.querySelectorAll('.cad-board-card')].filter(c => c.style.display !== 'none');
+    input.value = '原神';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    assert.equal(visible().length, 1);
+    assert.equal(visible()[0].dataset.fid, '650');
+    assert.equal(document.activeElement, input);
+    assert.match(document.querySelector('.cad-home-count').textContent, /1 of 9 boards/);
+    input.value = '310';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    assert.equal(visible().length, 1);
+    assert.equal(visible()[0].dataset.fid, '310');
+    input.value = '不存在';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    assert.equal(visible().length, 0);
+    assert.match(document.querySelector('.cad-home-count').textContent, /No boards match/);
+    input.value = '';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    assert.equal(visible().length, 9);
+});
+
+test('pressing / on the picker focuses the board search', () => {
+    const { window, document, cad } = load(liveIndex, 'https://bbs.nga.cn/', { cad_on: true });
+    cad.boot();
+    document.querySelector('.cad-home-search').blur();
+    assert.notEqual(document.activeElement, document.querySelector('.cad-home-search'));
+    keydown(window, { key: '/' });
+    assert.equal(document.activeElement, document.querySelector('.cad-home-search'));
+});
+
+test('home command opens the picker in place on a thread page', async () => {
+    const { window, document, cad } = load(liveThread, 'https://bbs.nga.cn/read.php?tid=9', { cad_on: true });
+    cad.boot();
+    assert.equal(cad.getLastData().kind, 'posts');
+    await cad.runCmd('home');
+    assert.equal(cad.getLastData().kind, 'home');
+    assert.equal(window.location.href, 'https://bbs.nga.cn/read.php?tid=9');
+    assert.ok(document.querySelector('.cad-home-search'));
+    // No groups on a thread page, but Recent still shows the board just visited.
+    assert.match(document.body.textContent, /Recent/);
+    assert.ok(document.querySelector('.cad-board-card[data-fid="-7"]'));
+});
+
+test('saving a board from a card stores it and moves the card to Saved', async () => {
+    const { document, cad, gm } = load(liveIndex, 'https://bbs.nga.cn/', { cad_on: true, cad_boards: [] });
+    cad.boot();
+    assert.equal(document.querySelectorAll('.cad-board-card').length, 9);
+    document.querySelector('.cad-board-save').click();
+    await sleep(50);
+    assert.deepEqual(JSON.parse(JSON.stringify(gm.cad_boards)), [{ fid: '7', name: '网事杂谈' }]);
+    const savedBtn = [...document.querySelectorAll('.cad-board-save')].find(b => b.disabled);
+    assert.equal(savedBtn.textContent, 'Saved ✓');
+    // Saving adds the board to Saved; it stays in Favorite boards too.
+    assert.equal(document.querySelectorAll('.cad-board-card').length, 10);
+    assert.match(document.body.textContent, /Saved/);
+});
+
+test('an index with no boards shows the empty state, and other idle pages stay idle', () => {
+    const empty = load(emptyHtml, 'https://bbs.nga.cn/', { cad_on: true });
+    empty.cad.boot();
+    assert.equal(empty.cad.getLastData().kind, 'home');
+    assert.ok(empty.document.querySelector('.cad-home-empty'));
+    const other = load(emptyHtml, 'https://bbs.nga.cn/thread.php?fid=7', { cad_on: true });
+    assert.equal(other.cad.extract().kind, 'idle');
+});

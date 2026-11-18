@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NGA Code Agent Disguise
 // @namespace    https://github.com/aromaw/nga-code-agent-disguise
-// @version      4.1.3
+// @version      4.1.7
 // @description  Disguise NGA forum pages as a Claude Code / Codex CLI session. Backtick toggles outside text fields, /help lists commands, and reply/quote post through the site's own form after a confirm step.
 // @author       aromaw
 // @match        *://bbs.nga.cn/*
@@ -20,7 +20,7 @@
     'use strict';
 
     const TEST = typeof globalThis !== 'undefined' && !!globalThis.__CAD_TEST;
-    const VERSION = '4.1.3';
+    const VERSION = '4.1.7';
     const POST_PREVIEW_LINES = 14;
 
     /* ================= settings ================= */
@@ -78,33 +78,37 @@
     html:not(.cad-on) #cad__root { display:none !important; }
 
     #cad__root { --radius:10px; }
+    /* Theme tokens follow the real apps where verified (Codex: shipped webview
+       CSS tokens; Claude: canvas #FCFCFB/#151515 and clay #c6613f/#d97757 from
+       Open Claude UI's reverse-engineering). Values the sources don't give
+       stay close to the previous theme instead of being invented. */
     #cad__root.cad-claude.cad-dark {
-        --bg:#21201e; --bg-input:#2b2a27; --bg-side:#181715; --bg-elev:#282724;
-        --text:#eceae4; --dim:#a6a49d; --faint:#76746e;
-        --accent:#d97757; --accent2:#e5947a; --border:rgba(255,250,240,.09); --border-strong:rgba(255,250,240,.17); --link:#e5947a;
-        --bullet:#d97757; --green:#8ed898; --band:rgba(217,119,87,.12); --hover:rgba(255,250,240,.055);
-        --card-bg:#262522; --user-bubble:#2e2d29; --quote-bg:#252421;
+        --bg:#151515; --bg-input:#1d1c1a; --bg-side:#131313; --bg-elev:#1f1e1c;
+        --text:#eceae4; --dim:#a6a49d; --faint:#8f8d87;
+        --accent:#d97757; --accent2:#e08a6d; --border:rgba(255,250,240,.08); --border-strong:rgba(255,250,240,.16); --link:#e5947a;
+        --bullet:#d97757; --green:#8ed898; --band:rgba(217,119,87,.12); --hover:rgba(255,250,240,.05);
+        --card-bg:#1d1c1a; --user-bubble:#242321; --quote-bg:#1c1b19; --side-w:256px;
     }
     #cad__root.cad-claude.cad-light {
-        --bg:#faf9f5; --bg-input:#ffffff; --bg-side:#f2f0e8; --bg-elev:#f4f2eb;
-        --text:#1d1c1a; --dim:#5c5a54; --faint:#8a877f;
-        --accent:#c96442; --accent2:#ae5132; --border:rgba(28,25,20,.09); --border-strong:rgba(28,25,20,.17); --link:#2d5f8a;
-        --bullet:#c96442; --green:#22743c; --band:rgba(201,100,66,.10); --hover:rgba(28,25,20,.045);
-        --card-bg:#f4f2eb; --user-bubble:#efede5; --quote-bg:#f4f2ea;
+        --bg:#fcfcfb; --bg-input:#ffffff; --bg-side:#f5f4f0; --bg-elev:#f4f2ec;
+        --text:#0b0b0b; --dim:#52514e; --faint:#898781;
+        --accent:#c6613f; --accent2:#a34d2e; --border:rgba(11,11,11,.08); --border-strong:rgba(11,11,11,.16); --link:#184f95;
+        --bullet:#c6613f; --green:#22743c; --band:rgba(198,97,63,.10); --hover:rgba(11,11,11,.04);
+        --card-bg:#f5f4f0; --user-bubble:#f1efe8; --quote-bg:#f5f4f0; --side-w:256px;
     }
     #cad__root.cad-codex.cad-dark {
-        --bg:#0d0d0d; --bg-input:#171717; --bg-side:#111111; --bg-elev:#181818;
-        --text:#ededed; --dim:#9e9e9e; --faint:#686868;
-        --accent:#10a37f; --accent2:#3ee0b0; --border:rgba(255,255,255,.085); --border-strong:rgba(255,255,255,.16); --link:#3ee0b0;
-        --bullet:#10a37f; --green:#3ee0b0; --band:rgba(16,163,127,.13); --hover:rgba(255,255,255,.05);
-        --card-bg:#151515; --user-bubble:#1d1d1d; --quote-bg:#131313;
+        --bg:#0d0d0d; --bg-input:#181818; --bg-side:#131313; --bg-elev:#212121;
+        --text:#dfdfdf; --dim:#afafaf; --faint:#8f8f8f;
+        --accent:#339cff; --accent2:#339cff; --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16); --link:#339cff;
+        --bullet:#339cff; --green:#40c977; --band:rgba(51,156,255,.12); --hover:rgba(255,255,255,.05);
+        --card-bg:#181818; --user-bubble:#212121; --quote-bg:#131313; --side-w:275px;
     }
     #cad__root.cad-codex.cad-light {
-        --bg:#ffffff; --bg-input:#ffffff; --bg-side:#f7f7f8; --bg-elev:#f4f4f6;
-        --text:#0d0d0d; --dim:#5d5d65; --faint:#8e8e96;
-        --accent:#0b7a5e; --accent2:#0b7a5e; --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.15); --link:#0b7a5e;
-        --bullet:#0b7a5e; --green:#0b7a5e; --band:rgba(11,122,94,.09); --hover:rgba(0,0,0,.04);
-        --card-bg:#f7f7f8; --user-bubble:#f2f2f4; --quote-bg:#f7f7f8;
+        --bg:#ffffff; --bg-input:#ffffff; --bg-side:#f9f9f9; --bg-elev:#f3f3f3;
+        --text:#1a1c1f; --dim:#5d5d5d; --faint:#8f8f8f;
+        --accent:#0285ff; --accent2:#0285ff; --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.15); --link:#0285ff;
+        --bullet:#0285ff; --green:#00a240; --band:rgba(2,133,255,.10); --hover:rgba(0,0,0,.04);
+        --card-bg:#f9f9f9; --user-bubble:#f3f3f3; --quote-bg:#f9f9f9; --side-w:275px;
     }
 
     #cad__root {
@@ -119,9 +123,9 @@
     #cad__root button { font:inherit; color:inherit; }
     #cad__root a:focus-visible, #cad__root button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     /* The shell is one column inside the fixed root, so the post list scrolls and the prompt stays put. */
-    .cad-app { flex:1; min-height:0; display:flex; flex-direction:row; overflow:hidden; }
+    .cad-app { flex:1; min-height:0; display:flex; flex-direction:row; overflow:hidden; position:relative; }
     .cad-main { flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; background:var(--bg); }
-    .cad-side { width:256px; flex-shrink:0; min-width:0; border-right:1px solid var(--border); background:var(--bg-side, var(--bg)); display:flex; flex-direction:column; min-height:0; overflow-x:hidden; overflow-y:auto; padding:12px 10px 14px; user-select:none; }
+    .cad-side { width:var(--side-w,256px); flex-shrink:0; min-width:0; border-right:1px solid var(--border); background:var(--bg-side, var(--bg)); display:flex; flex-direction:column; min-height:0; overflow-x:hidden; overflow-y:auto; padding:12px 10px 14px; user-select:none; }
     .cad-side-top { display:flex; align-items:center; justify-content:space-between; padding:2px 6px 10px; }
     .cad-traffic { display:inline-flex; align-items:center; gap:7px; opacity:.8; }
     .cad-traffic i { width:11px; height:11px; border-radius:50%; display:block; }
@@ -130,13 +134,11 @@
     .cad-traffic i:nth-child(3) { background:#28c840; }
     .cad-brand { font-weight:650; font-size:15px; padding:4px 8px 10px; color:var(--text); letter-spacing:-0.015em; display:flex; align-items:center; gap:8px; }
     .cad-brand-badge { font-size:11px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--band); color:var(--accent2); }
-    .cad-newbtn { display:flex; align-items:center; gap:8px; width:100%; border:1px solid var(--border-strong); background:var(--bg-elev); color:var(--text); border-radius:9px; padding:7px 11px; margin:2px 0 6px; font-size:13px; font-weight:550; cursor:pointer; transition:background .12s, border-color .12s; }
-    .cad-newbtn:hover { background:var(--hover); border-color:var(--accent); }
+    .cad-newbtn { display:flex; align-items:center; gap:8px; width:100%; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:9px; padding:7px 11px; margin:2px 0 6px; font-size:13px; font-weight:550; cursor:pointer; transition:background .12s, border-color .12s; }
+    .cad-newbtn:hover { background:var(--hover); border-color:var(--border-strong); }
     .cad-newbtn .cad-kbd { margin-left:auto; font-size:11px; color:var(--faint); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-    .cad-claude .cad-newbtn { background:rgba(217,119,87,.12); border-color:rgba(217,119,87,.25); color:var(--accent2); }
-    .cad-claude .cad-newbtn:hover { background:rgba(217,119,87,.2); border-color:var(--accent); }
     .cad-side-label { font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); padding:14px 10px 5px; font-weight:650; }
-    .cad-side a, .cad-side button.cad-sideitem { display:flex; align-items:center; gap:8px; width:100%; max-width:100%; text-align:left; border:0; background:transparent; color:var(--dim); border-radius:8px; padding:6px 10px; margin:1px 0; text-decoration:none; font-size:13.5px; transition:background .12s, color .12s; }
+    .cad-side a, .cad-side button.cad-sideitem { display:flex; align-items:center; gap:8px; width:100%; max-width:100%; text-align:left; border:0; background:transparent; color:var(--dim); border-radius:8px; padding:6px 10px; margin:1px 0; text-decoration:none; font-size:13px; transition:background .12s, color .12s; }
     .cad-side a span, .cad-side button.cad-sideitem span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .cad-side a:hover, .cad-side button.cad-sideitem:hover { background:var(--hover); color:var(--text); }
     .cad-side .cad-onitem { background:var(--hover); color:var(--text); font-weight:600; }
@@ -150,7 +152,7 @@
     .cad-side-footsub { font-size:11px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .cad-pill { border:1px solid var(--border); border-radius:999px; padding:2px 9px; font-size:12px; font-weight:500; color:var(--dim); background:var(--bg-elev); transition:all .12s; cursor:pointer; }
     .cad-pill:hover { border-color:var(--border-strong); color:var(--text); }
-    .cad-crumb { font-size:13.5px; color:var(--text); font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cad-crumb { font-size:14px; color:var(--text); font-weight:650; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .cad-modal { margin:8px 0 12px; }
     .cad-modal-card { border:1px solid var(--border-strong); border-radius:14px; padding:14px 16px; background:var(--bg-input); color:var(--text); box-shadow:0 8px 28px rgba(0,0,0,.22); }
     #cad__root pre, #cad__root .cad-preview { background:transparent !important; color:var(--text) !important; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; }
@@ -173,6 +175,28 @@
     .cad-welcome .sec { color:var(--accent2); font-weight:650; }
     .cad-welcome .dim { color:var(--faint); font-size:12.5px; }
 
+    /* Boards home: centered Codex-style header, grouped board cards. */
+    .cad-home-head { text-align:center; padding:20px 0 4px; }
+    .cad-home-title { font-size:26px; line-height:1.25; font-weight:680; letter-spacing:-0.02em; }
+    .cad-home-kicker { color:var(--dim); font-size:13.5px; margin-top:6px; }
+    .cad-home-search-wrap { max-width:560px; margin:18px auto 8px; }
+    .cad-home-search { width:100%; background:var(--bg-input); border:1px solid var(--border-strong); border-radius:14px; padding:11px 16px; font:inherit; font-size:14.5px; color:var(--text); outline:none; transition:border-color .15s, box-shadow .15s; }
+    .cad-codex .cad-home-search { border-radius:18px; }
+    .cad-home-search:focus { border-color:color-mix(in srgb, var(--accent) 60%, var(--border-strong)); box-shadow:0 4px 22px rgba(0,0,0,.16); }
+    .cad-home-search::placeholder { color:var(--faint); opacity:.75; }
+    .cad-home-count { text-align:center; color:var(--faint); font-size:12.5px; min-height:18px; }
+    .cad-home-sect { margin:20px 0 0; }
+    .cad-board-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px; margin-top:8px; }
+    .cad-board-card { position:relative; border:1px solid var(--border); border-radius:12px; background:var(--bg-elev); transition:border-color .12s, background .12s; }
+    .cad-board-card:hover { border-color:var(--accent); background:var(--hover); }
+    .cad-board-card a { display:block; color:var(--text); text-decoration:none; padding:12px 14px; padding-right:64px; }
+    .cad-board-name { display:block; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cad-board-fid { display:block; font-size:12px; color:var(--faint); margin-top:2px; }
+    .cad-board-save { position:absolute; top:9px; right:9px; border:1px solid var(--border); background:transparent; color:var(--dim); border-radius:999px; padding:2px 9px; font-size:11.5px; font-weight:550; cursor:pointer; transition:background .12s, color .12s, border-color .12s; }
+    .cad-board-save:hover { border-color:var(--border-strong); color:var(--text); background:var(--hover); }
+    .cad-board-save:disabled { color:var(--accent2); border-color:transparent; cursor:default; }
+    .cad-home-empty { border:1px solid var(--border); border-radius:14px; background:var(--bg-elev); padding:16px 18px; margin-top:22px; font-size:13.5px; color:var(--dim); display:flex; flex-direction:column; gap:6px; }
+
     .cad-body { flex:1; overflow-y:auto; padding:8px 0 18px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
     .cad-measure { max-width:110ch; margin:0 auto; padding:14px 28px 10px; }
     #cad__root ::selection { background:var(--accent); color:var(--bg); }
@@ -193,8 +217,7 @@
     .cad-topicnum { color:var(--faint); display:inline-block; min-width:34px; font-size:12px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
     .cad-pagelink { color:var(--link) !important; text-decoration:none !important; padding:0 3px; }
     .cad-pagelink:hover { text-decoration:underline !important; }
-    .cad-op { background:var(--band); color:var(--accent2); border:1px solid rgba(217,119,87,.28); border-radius:999px; padding:0 7px; font-weight:650; font-size:11px; }
-    .cad-codex .cad-op { border-color:rgba(16,163,127,.3); }
+    .cad-op { background:var(--band); color:var(--accent2); border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:999px; padding:0 7px; font-weight:650; font-size:11px; }
     .cad-ps1 { color:var(--accent2); }
     .cad-body::-webkit-scrollbar { width:8px; }
     .cad-body::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:4px; }
@@ -204,18 +227,17 @@
     .cad-post { position:relative; margin:0 0 10px; padding:14px 16px; border-radius:14px; border:1px solid transparent; transition:background .12s, border-color .12s; }
     .cad-post-op { background:var(--user-bubble); border:1px solid var(--border); padding:16px 18px; margin:4px 0 16px; }
     .cad-claude .cad-post:not(.cad-post-op) { border-radius:0; border-bottom:1px solid var(--border); padding:14px 4px 16px; margin-bottom:4px; }
-    .cad-codex .cad-post:not(.cad-post-op) { border-radius:0; border-left:2px solid var(--border); padding:10px 0 14px 18px; margin:0 0 10px 8px; }
+    .cad-codex .cad-post:not(.cad-post-op) { border-radius:0; border-bottom:1px solid var(--border); padding:12px 4px 16px; margin-bottom:4px; }
     .cad-post .cad-posthead { display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--faint); font-size:13px; margin:0 0 8px; }
     .cad-post.cad-collapsed { cursor:pointer; }
     .cad-post.cad-collapsed:hover { background:var(--hover); }
     .cad-turn-ico { width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; font-size:11px; font-weight:650; }
-    .cad-claude .cad-turn-ico-bot { background:rgba(217,119,87,.14); color:var(--accent); }
-    .cad-codex .cad-turn-ico-bot { background:rgba(16,163,127,.14); color:var(--accent); }
+    .cad-turn-ico-bot { background:var(--band); color:var(--accent); }
     .cad-turn-ico-user { background:var(--bg-elev); border:1px solid var(--border-strong); color:var(--text); }
     .cad-floor { color:var(--dim); font-weight:600; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; background:var(--bg-elev); border:1px solid var(--border); padding:0 6px; border-radius:5px; }
     .cad-author { color:var(--text); font-weight:600; padding:0 2px; }
     .cad-likes { color:var(--accent2); font-size:12px; font-weight:550; }
-    .cad-post .cad-text { color:var(--text); line-height:1.7; }
+    .cad-post .cad-text { color:var(--text); font-size:14px; line-height:1.7; }
     .cad-qline { color:var(--dim); white-space:pre-wrap; word-break:break-word; margin:8px 0 10px; padding:8px 12px; border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; background:var(--quote-bg); font-size:13.5px; }
     .cad-codex .cad-qline { border-left:1px solid var(--border); border-radius:10px; padding:0; overflow:hidden; }
     .cad-codex .cad-qline > div:last-child { padding:8px 12px; }
@@ -241,6 +263,7 @@
         display:flex; flex-direction:column; overflow:hidden;
     }
     .cad-codex .cad-composer-box { border-radius:18px; }
+    .cad-claude .cad-composer-box { border-radius:14px; }
     .cad-composer-box:focus-within {
         border-color:color-mix(in srgb, var(--accent) 60%, var(--border-strong));
         box-shadow:0 4px 26px rgba(0,0,0,.24);
@@ -249,7 +272,7 @@
         width:100%; min-height:46px; max-height:180px; resize:vertical; background:transparent; color:var(--text);
         border:0; outline:none; font:inherit; font-size:14.5px; padding:13px 16px 6px; caret-color:var(--text);
     }
-    .cad-composer-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px 9px 14px; }
+    .cad-composer-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 8px 8px 12px; border-top:1px solid var(--border); }
     .cad-composer-meta { display:flex; align-items:center; gap:8px; min-width:0; font-size:12px; color:var(--faint); }
     .cad-composer-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
     .cad-model-pill { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--hover); color:var(--dim); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:550; cursor:pointer; transition:background .12s, color .12s; }
@@ -271,6 +294,39 @@
     .cad-statusbar .cad-flag { padding:1px 5px; font-size:11.5px; }
     .cad-pagesep { color:var(--faint); margin:14px 0 6px; font-size:12px; display:flex; align-items:center; gap:10px; user-select:none; }
     .cad-pagesep::before, .cad-pagesep::after { content:''; flex:1; border-top:1px solid var(--border); }
+    /* Newly appended pages fade in once. Preact preserves the keyed
+       separator node across renders, so the entrance does not replay. */
+    @keyframes cad-fade-up { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    @keyframes cad-shimmer { 0% { opacity:.5; } 50% { opacity:1; } 100% { opacity:.5; } }
+    @media (prefers-reduced-motion: no-preference) {
+        .cad-pagesep { animation:cad-fade-up .35s ease-out both; }
+        .cad-skel-head, .cad-skel-line { animation:cad-shimmer 1.4s ease-in-out infinite; }
+        #cad__root .cad-body { scroll-behavior:smooth; }
+    }
+    .cad-skel { border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin:10px 0; background:var(--bg-elev); }
+    .cad-skel-head { width:180px; max-width:60%; height:12px; border-radius:6px; background:var(--border-strong); margin-bottom:10px; }
+    .cad-skel-line { height:11px; border-radius:6px; background:var(--border); margin:7px 0; }
+    .cad-skel-short { width:55%; }
+    .cad-statusline.cad-end, .cad-statusline.cad-error { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .cad-statusline.cad-end { justify-content:space-between; }
+    /* Long auto-loaded lists: skip layout for off-screen posts. */
+    .cad-post { content-visibility:auto; contain-intrinsic-size:auto 180px; }
+    .cad-menu-btn { display:none !important; }
+    .cad-topbar-btn:disabled { opacity:.45; cursor:default; }
+    .cad-topbar-btn:disabled:hover { background:var(--bg-elev); border-color:var(--border); color:var(--dim); }
+    @media (max-width:1100px) {
+        /* Icon rail: boards and favorites stay one click away, labels go. */
+        .cad-side { width:64px; padding:12px 6px 14px; }
+        .cad-side .cad-brand span, .cad-side-label, .cad-side-footmeta,
+        .cad-newbtn span + span, .cad-side a span, .cad-side button.cad-sideitem span,
+        .cad-side div.cad-sideitem { display:none; }
+        .cad-side a, .cad-side button.cad-sideitem { justify-content:center; padding:7px 0; }
+        .cad-newbtn { justify-content:center; }
+        .cad-side-top { justify-content:center; }
+        .cad-side-top .cad-action { display:none; }
+        .cad-side-foot { justify-content:center; padding-left:0; padding-right:0; }
+        .cad-brand { justify-content:center; padding:4px 0 10px; }
+    }
     .cad-panel { max-height:min(62vh, 540px); overflow:auto; border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-input); color:var(--text); padding:14px 16px; margin:0 0 14px; box-shadow:0 8px 28px rgba(0,0,0,.2); }
     .cad-panelhead { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--accent2); font-weight:600; position:sticky; top:0; background:var(--bg-input); padding-bottom:6px; }
     .cad-compose { width:100%; min-height:7em; margin:8px 0; background:var(--bg-elev); color:inherit; border:1px solid var(--border-strong); border-radius:10px; font:inherit; padding:10px 12px; resize:vertical; }
@@ -312,6 +368,19 @@
     .cad-dline.cad-add span:nth-child(3) { color:#b6f0c6; }
     .cad-idlebtn { color:var(--link); }
     @media (max-width:760px) {
+        .cad-side { display:none; }
+        .cad-side.cad-side-open { display:flex; position:absolute; left:0; top:0; bottom:0; z-index:30; width:var(--side-w,256px); padding:12px 10px 14px; box-shadow:0 0 40px rgba(0,0,0,.4); }
+        .cad-side.cad-side-open .cad-brand span, .cad-side.cad-side-open .cad-side-label,
+        .cad-side.cad-side-open .cad-side-footmeta, .cad-side.cad-side-open .cad-newbtn span + span,
+        .cad-side.cad-side-open a span, .cad-side.cad-side-open button.cad-sideitem span,
+        .cad-side.cad-side-open div.cad-sideitem,
+        .cad-side.cad-side-open .cad-side-top .cad-action { display:revert; }
+        .cad-side.cad-side-open a, .cad-side.cad-side-open button.cad-sideitem { justify-content:flex-start; padding:6px 10px; }
+        .cad-side.cad-side-open .cad-newbtn { justify-content:flex-start; }
+        .cad-side.cad-side-open .cad-side-top { justify-content:space-between; }
+        .cad-side.cad-side-open .cad-side-foot { justify-content:flex-start; padding-left:6px; padding-right:6px; }
+        .cad-side.cad-side-open .cad-brand { justify-content:flex-start; padding:4px 8px 10px; }
+        .cad-menu-btn { display:inline-flex !important; }
         .cad-welcome .right { display:none; }
         .cad-welcome .left { min-width:0; }
         .cad-body { padding:4px 0 16px; }
@@ -321,6 +390,7 @@
         .cad-inputbar, .cad-panel { padding-left:12px; padding-right:12px; }
         .cad-statusbar { padding:0 12px; }
         .cad-statusbar .cad-secondary { display:none; }
+        .cad-home-title { font-size:22px; }
         .cad-img { max-width:100%; }
         .cad-topbar { padding:0 8px; }
     }
@@ -408,10 +478,15 @@
     let focused = false;
     let covered = false;
     let coverFocus = false;
+    let sideOpen = false;
+    let homeForced = false;
+    let homeQuery = '';
+    let homeFocused = false;
     let gTs = 0;
     let autoPageLoading = false;
     let autoPageError = false;
     let nextPageUrl = null;
+    let nextPageGuessed = false; // true when nextPageUrl was synthesised as page+1, not read from a pager link
     let loadedPages = new Set();
     let opUidSticky = '';
     let opUidTid = '';
@@ -538,6 +613,9 @@
 
     function pageFid(doc) {
         doc = doc || document;
+        // The index page has no current board: the last-link fallback below
+        // would otherwise promote a nav link into the sidebar as "current".
+        if (doc === document && isIndexPage()) return '';
         // A DOMParser document inherits the live page URL as baseURI, so only the live
         // document may take its fid from the address bar. Other documents use their own fields.
         if (doc === document) {
@@ -594,6 +672,7 @@
         if (store.compact) return FAKE_DIR;
         if (data && data.kind === 'posts') return '~/threads/' + (curTid() || 'latest');
         if (data && data.kind === 'topics') return '~/boards/' + String(data.board || 'board').replace(/\s+/g, '-');
+        if (data && data.kind === 'home') return '~/boards';
         return '~';
     }
 
@@ -1561,10 +1640,72 @@
             .finally(() => { favorPending = false; });
     }
 
+    function isIndexPage(doc) {
+        // The NGA front page: path / or /index.php, with no thread/board list.
+        // A parsed doc inherits the live page URL as baseURI, so only the
+        // live document may decide from the address bar.
+        if (doc && doc !== document) return false;
+        const p = (location.pathname || '').replace(/\/+$/, '') || '/';
+        return p === '/' || p === '/index.php' || p === '/index';
+    }
+
+    function extractHome(doc) {
+        doc = doc || document;
+        const groups = [];
+        const byName = new Map();
+        const seen = new Set();
+        const inChrome = el => el && el.closest && el.closest('#cad__root, #m_nav, #userinfo, #ucp, header, footer, .nav, #breadcrumbs, .crumbs, #favorite_forums, #favor_forums');
+        const headings = [...doc.querySelectorAll('h1, h2, h3, h4')].filter(h => !inChrome(h) && tidyName(h.textContent));
+        const groupFor = a => {
+            // Last heading that precedes this link in document order. A
+            // heading that wraps the link itself does not count as its group.
+            let name = '';
+            for (const h of headings) {
+                if (h.contains(a)) continue;
+                if (h.compareDocumentPosition(a) & 4 /* Node.DOCUMENT_POSITION_FOLLOWING */) name = tidyName(h.textContent);
+                else break;
+            }
+            return name;
+        };
+        const add = (fid, name, group) => {
+            const id = String(fid || '').trim();
+            if (!id || !/^-?\d+$/.test(id) || seen.has(id)) return;
+            const label = tidyName(name).replace(/^\[|\]$/g, '').trim();
+            if (!label || JUNK_BOARD_NAME.test(label) || /^\d+$/.test(label) || /^https?:/i.test(label)) return;
+            seen.add(id);
+            const key = group || '';
+            if (!byName.has(key)) { byName.set(key, { name: group, boards: [] }); groups.push(byName.get(key)); }
+            byName.get(key).boards.push({ fid: id, name: label });
+        };
+        [...doc.querySelectorAll('a[href*="fid="]')].forEach(a => {
+            if (inChrome(a)) return;
+            const href = a.getAttribute('href') || '';
+            if (/recommend=|order_by=|page=|favor=|key=|authorid=|content=/.test(href) && !/ff=/.test(href)) return;
+            add(fidFromHref(href), a.textContent, groupFor(a));
+        });
+        // Boards the viewer favorited on NGA itself, from the page's own
+        // favorites block. Kept separate from groups (and from Saved, which
+        // is the script's local list) so the picker shows them as one module.
+        const favorites = [];
+        const favSeen = new Set();
+        [...doc.querySelectorAll('#favorite_forums a[href*="fid="], #favor_forums a[href*="fid="]')].forEach(a => {
+            const href = a.getAttribute('href') || '';
+            if (/recommend=|order_by=|page=|favor=|key=|authorid=|content=/.test(href) && !/ff=/.test(href)) return;
+            const id = String(fidFromHref(href) || '').trim();
+            if (!id || !/^-?\d+$/.test(id) || favSeen.has(id)) return;
+            const label = tidyName(a.textContent).replace(/^\[|\]$/g, '').trim();
+            if (!label || JUNK_BOARD_NAME.test(label) || /^\d+$/.test(label) || /^https?:/i.test(label)) return;
+            favSeen.add(id);
+            favorites.push({ fid: id, name: label });
+        });
+        return { kind: 'home', board: 'Boards', groups: groups.filter(g => g.boards.length), favorites };
+    }
+
     function extract() {
         let data;
         if (document.querySelector('#m_posts')) data = extractPosts();
         else if (document.querySelector('#m_threads')) data = extractTopics();
+        else if (isIndexPage()) data = extractHome();
         else data = { kind: 'idle' };
         if (data) data.pager = extractPager();
         if (data && data.kind === 'posts' && curTid()) {
@@ -1857,13 +1998,14 @@
     }
 
     /* ================= commands ================= */
-    const CMDS = ['help', 'search:', 'board', 'board list', 'board add', 'board del', 'board fid', 'next page', 'prev page', 'go page', 'open', 'ls', 'top', 'floor', 'sort reply', 'sort post', 'author', 'author off', 'reply', 'quote', 'post', 'bookmark', 'bookmark list', 'unbookmark', 'vote', 'noti', 'user', 'send', 'theme', 'claude', 'codex', 'dark', 'light', 'img', 'op', 'expand', 'vim', 'autopage', 'compact', 'pause', 'togglekey', 'clear', 'exit', 'version', 'pwd', 'whoami'];
+    const CMDS = ['help', 'home', 'search:', 'board', 'board list', 'board add', 'board del', 'board fid', 'next page', 'prev page', 'go page', 'open', 'ls', 'top', 'floor', 'sort reply', 'sort post', 'author', 'author off', 'reply', 'quote', 'post', 'bookmark', 'bookmark list', 'unbookmark', 'vote', 'noti', 'user', 'send', 'theme', 'claude', 'codex', 'dark', 'light', 'img', 'op', 'expand', 'vim', 'autopage', 'compact', 'pause', 'togglekey', 'clear', 'exit', 'version', 'pwd', 'whoami'];
     const NEEDS_ARG = new Set(['search:', 'board', 'board add', 'board del', 'board fid', 'go page', 'open', 'floor', 'author', 'reply', 'quote', 'post', 'vote', 'user', 'togglekey']);
 
     function helpOut() {
         return [
             line('<b>boards and threads</b>  <span class="cad-faint">a leading / is optional</span>', 'cad-sect'),
             line(esc('ls · open <n>          list what is loaded, or open topic n'), 'cad-dim'),
+            line(esc('home               open the board picker'), 'cad-dim'),
             line(esc('next · prev · go page <n> · top · floor <n>'), 'cad-dim'),
             line(esc('sort reply · sort post latest reply, or latest new thread'), 'cad-dim'),
             line(esc('search: <words>        this board when a fid is known'), 'cad-dim'),
@@ -2155,6 +2297,11 @@
     }
 
     function pageNav(dir) {
+        const bounds = pagerBounds();
+        // The pager already knows the last page: do not navigate to a
+        // synthesised page+1 that does not exist.
+        if (dir > 0 && bounds.max > 0 && bounds.cur >= bounds.max && !bounds.hasNext) return;
+        if (dir < 0 && bounds.cur <= 1) return;
         const pager = (lastData && lastData.pager) || [];
         const pick = dir > 0
             ? pager.find(l => /^(\u4e0b\u4e00\u9875|\u4e0b\u9875|>{1,2})$/.test(l.t))
@@ -2970,6 +3117,7 @@
             if (!q) out = [line(esc('usage: search: <words> · search: -g <words>'), 'cad-faint')];
             else { doSearch(q, global); return; }
         }
+        else if (m === 'home') { homeForced = true; homeQuery = ''; refresh(true); return; }
         else if (m === 'boards') { out = boardCmd('list'); }
         else if (m === 'board' || m.startsWith('board ')) {
             const r = boardCmd(cmd.slice(5).trim());
@@ -3107,7 +3255,9 @@
         else if (m === 'autopage' || m === 'auto page') {
             store.autopage = !store.autopage;
             if (!store.autopage) cancelPageRequest();
-            if (store.autopage) maybeAutoLoad();
+            // Re-enabling after a failed load retries instead of staying
+            // latched on the old error.
+            if (store.autopage) { autoPageError = false; maybeAutoLoad(); }
             out = [line('autopage → ' + (store.autopage ? 'on' : 'off'), 'cad-faint')];
         }
         else if (m === 'compact') {
@@ -3186,6 +3336,25 @@
         return hit ? hit.href : null;
     }
 
+    // Highest numbered page in a pager, or 0 when the pager has no numbers.
+    // The first page's pager already knows the last page, so a later page
+    // must not guess its way past it.
+    function maxPageNo(pager) {
+        const nums = (pager || []).map(p => parseInt(p.t, 10)).filter(n => Number.isFinite(n) && n > 0);
+        return nums.length ? Math.max.apply(null, nums) : 0;
+    }
+
+    // { cur, max, hasPrev, hasNext } from the loaded page's pager.
+    function pagerBounds() {
+        const pager = (lastData && lastData.pager) || [];
+        return {
+            cur: curPageNo(),
+            max: maxPageNo(pager),
+            hasPrev: pager.some(l => /^(\u4e0a\u4e00\u9875|\u4e0a\u9875|<{1,2})$/.test(l.t)),
+            hasNext: !!findNextUrl(pager),
+        };
+    }
+
     function authoridUrl(n) {
         const u = new URL('/read.php', location.href);
         u.searchParams.set('tid', curTid());
@@ -3205,7 +3374,7 @@
         try { pageNo = +(new URL(pageUrl).searchParams.get('page') || 0); } catch (err) { pageNo = 0; }
         const label = pageNo ? 'page ' + pageNo : 'next page';
         loadedPages.add(pageUrl);
-        const end = () => { if (opMode) opEnd = true; else nextPageUrl = null; };
+        const end = () => { if (opMode) opEnd = true; else { nextPageUrl = null; nextPageGuessed = false; } };
         const emptyFail = containerSel => {
             if (doc.querySelector(containerSel)) end();
             else autoPageError = true;
@@ -3225,7 +3394,7 @@
                 return;
             }
             if (opMode) freshPosts.forEach(p => { p.isOP = true; });
-            lastData.posts.push({ sep: label });
+            lastData.posts.push({ sep: label + ' · ' + freshPosts.length + ' posts' });
             lastData.posts.push(...freshPosts);
             if (opMode) opNextNo++;
         } else if (lastData.kind === 'topics') {
@@ -3233,22 +3402,34 @@
             if (!data || !data.topics.length) { emptyFail('#m_threads'); return; }
             const seenT = new Set(lastData.topics.filter(t => !t.sep).map(t => t.href));
             const freshTopics = data.topics.filter(t => !seenT.has(t.href));
-            if (!freshTopics.length) { nextPageUrl = null; return; }
-            lastData.topics.push({ sep: label });
+            if (!freshTopics.length) { nextPageUrl = null; nextPageGuessed = false; return; }
+            lastData.topics.push({ sep: label + ' · ' + freshTopics.length + ' topics' });
             lastData.topics.push(...freshTopics);
         } else return;
         if (!opMode) {
-            let u = findNextUrl(extractPager(doc, pageUrl));
+            // The fetched page's own pager is authoritative: when it has no
+            // next link and its numbered pages end at (or before) the page
+            // just loaded, this was the last page — stop instead of guessing
+            // page+1 and failing on a URL that does not exist.
+            const fetchedPager = extractPager(doc, pageUrl);
+            let u = findNextUrl(fetchedPager);
+            let guessed = false;
             if (!u) {
-                try {
-                    const x = new URL(pageUrl);
-                    if (/read\.php|thread\.php/.test(x.pathname)) {
-                        x.searchParams.set('page', String(Math.max(1, parseInt(x.searchParams.get('page') || '1', 10) || 1) + 1));
-                        u = x.href;
-                    }
-                } catch (err) { /* keep empty */ }
+                const knownMax = Math.max(maxPageNo(fetchedPager), maxPageNo(lastData && lastData.pager));
+                const pagerEmpty = !fetchedPager.length && !((lastData && lastData.pager) || []).length;
+                if (pageNo < knownMax || pagerEmpty) {
+                    try {
+                        const x = new URL(pageUrl);
+                        if (/read\.php|thread\.php/.test(x.pathname)) {
+                            x.searchParams.set('page', String(Math.max(1, pageNo || 1) + 1));
+                            u = x.href;
+                            guessed = true;
+                        }
+                    } catch (err) { /* keep empty */ }
+                }
             }
             nextPageUrl = (u && !loadedPages.has(u)) ? u : null;
+            nextPageGuessed = !!nextPageUrl && guessed;
         }
         ensureLocs();
     }
@@ -3366,6 +3547,11 @@
         if (!store.on || covered || document.hidden || autoPageLoading || !lastData || lastData.kind === 'idle') return;
         const opMode = opModeOn();
         if (opMode ? opEnd : !nextPageUrl) return;
+        // A URL synthesised as page+1 (no pager link pointed at it) is a
+        // guess. When it fails, that is evidence there is no next page —
+        // not a broken load — so it ends the list instead of latching the
+        // retry error. A pager-linked URL keeps the retry error.
+        const guessed = !opMode && nextPageGuessed;
         autoPageLoading = true;
         autoPageError = false;
         if (opMode && opNextNo === null) {
@@ -3376,32 +3562,47 @@
         const controller = new AbortController();
         pageRequest = controller;
         let timedOut = false;
+        let settledAsEnd = false;
+        const endOfPages = () => {
+            settledAsEnd = true;
+            nextPageUrl = null;
+            nextPageGuessed = false;
+            autoPageLoading = false;
+            autoPageError = false;
+        };
         const timeout = setTimeout(() => {
             // Still the active request: this abort is the deadline, not a navigation cancel.
             if (pageRequest !== controller) return;
             timedOut = true;
             autoPageLoading = false;
-            autoPageError = true;
+            if (guessed) endOfPages();
+            else autoPageError = true;
             controller.abort();
             renderApp();
         }, 15000);
         const isCurrent = () => pageRequest === controller && location.href === hrefAtStart && opMode === opModeOn();
+        // A stale result (mode or page changed while the fetch was in flight)
+        // must not leave the spinner stuck on: if no newer request owns the
+        // slot, release it.
+        const releaseStale = () => { if (pageRequest === controller) { autoPageLoading = false; pageRequest = null; } };
         renderApp();
         fetch(fetchUrl, { credentials: 'include', signal: controller.signal })
             .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return decodeRes(r); })
             .then(txt => {
-                if (!isCurrent()) return;
+                if (!isCurrent()) { releaseStale(); return; }
                 autoPageLoading = false;
                 appendPage(new DOMParser().parseFromString(txt, 'text/html'), fetchUrl, opMode);
                 renderApp();
                 setTimeout(maybeAutoLoad, 250);
             })
             .catch(err => {
-                if (!isCurrent()) return;
+                if (!isCurrent()) { releaseStale(); return; }
+                if (settledAsEnd) return;
                 // A cancel nulls pageRequest first, so it never reaches here. A deadline abort does.
                 if (err && err.name === 'AbortError' && !timedOut) return;
                 autoPageLoading = false;
-                autoPageError = true;
+                if (guessed) endOfPages();
+                else autoPageError = true;
                 renderApp();
             })
             .finally(() => { clearTimeout(timeout); if (pageRequest === controller) pageRequest = null; });
@@ -3430,7 +3631,8 @@
         const sig = quickSig();
         if (!force && sig === lastSig) return;
         lastSig = sig;
-        const fresh = extract();
+        const fresh = homeForced ? extractHome() : extract();
+        if (!fresh || fresh.kind !== 'home') homeFocused = false;
         if (fresh && fresh.kind === 'posts') {
             if (!opUidSticky) {
                 const args = parsePostArgs(document);
@@ -3447,6 +3649,12 @@
                 if (key === 'topics') {
                     const freshHrefs = new Set(fresh.topics.map(t => t.href));
                     tail = tail.filter(x => x.sep || !freshHrefs.has(x.href));
+                } else {
+                    // A new reply can push the last floor of this page onto
+                    // the next one; without this the pushed floor shows twice
+                    // (once fresh, once in the appended tail).
+                    const freshIds = new Set(fresh.posts.map(p => p.id));
+                    tail = tail.filter(x => x.sep || !freshIds.has(x.id));
                 }
                 fresh[key] = fresh[key].concat(tail);
                 merged = true;
@@ -3726,6 +3934,30 @@
         if (hadCount) renderApp();
     }
 
+    function focusHomeSearch() {
+        const el = document.querySelector('.cad-home-search');
+        if (!el) return false;
+        el.focus();
+        el.select();
+        return true;
+    }
+
+    // On the board picker, / focuses the board search instead of the prompt.
+    // Registered before the vim handler so it wins the key first.
+    function onHomeKey(e) {
+        if (!lastData || lastData.kind !== 'home') return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        const t = e.target;
+        if (t && t.closest && t.closest('input, textarea, select, [contenteditable]')) return;
+        if (e.key === '/') {
+            if (focusHomeSearch()) {
+                e.preventDefault();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            }
+        }
+    }
+    document.addEventListener('keydown', onHomeKey, true);
+
     document.addEventListener('keydown', onGlobalKey, true);
 
     function scheduleRefresh() {
@@ -3831,6 +4063,7 @@
         <path d="M8 9.5L11.5 12 8 14.5M12.5 14.5H16" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
     const FolderIcon = () => html`<svg class="cad-side-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.2 4.2A1.4 1.4 0 0 1 3.6 2.8h2.9l1.3 1.5h4.6a1.4 1.4 0 0 1 1.4 1.4v6.1a1.4 1.4 0 0 1-1.4 1.4H3.6a1.4 1.4 0 0 1-1.4-1.4V4.2Z" stroke="currentColor" stroke-width="1.3"/></svg>`;
+    const HomeIcon = () => html`<svg class="cad-side-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8.5 8 3l5.5 5.5M4.5 7.5v5h7v-5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
     const StarIcon = () => html`<svg class="cad-side-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.2l1.65 3.35 3.7.54-2.68 2.61.63 3.68L8 10.64l-3.3 1.74.63-3.68L2.65 6.09l3.7-.54L8 2.2Z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
     const ChatIcon = () => html`<svg class="cad-side-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v5a1.7 1.7 0 0 1-1.7 1.7H6.8L4 13.3v-2.4A1.7 1.7 0 0 1 3 9.2v-5Z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
     const SendArrow = () => html`<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 12.5V3.5M8 3.5L4 7.5M8 3.5L12 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -3916,6 +4149,117 @@
         <span class="cad-faint">${store.compact ? FAKE_DIR : cwdFor(lastData || { kind: 'idle' })}</span>
     </div>`;
 
+    function saveHomeBoard(fid, name) {
+        if (!boards.some(b => String(b.fid) === String(fid))) {
+            boards.push({ fid: String(fid), name });
+            saveBoards();
+        }
+        renderApp();
+        filterHome(homeQuery);
+    }
+
+    function homeRecentBoards() {
+        // Boards from recently read threads, named from saved boards or the
+        // parsed groups; unknown names stay as fid so nothing is invented.
+        // Saved boards are left out: Saved is the canonical list for them.
+        const seen = new Set();
+        const savedIds = new Set((boards || []).map(b => String(b.fid)));
+        const favIds = new Set(((lastData && lastData.kind === 'home' ? lastData.favorites : []) || []).map(b => String(b.fid)));
+        const out = [];
+        const nameOf = fid => {
+            const fromSaved = (boards || []).find(b => String(b.fid) === String(fid));
+            if (fromSaved) return fromSaved.name;
+            const gs = (lastData && lastData.kind === 'home' ? lastData.groups : []) || [];
+            for (const g of gs) { const hit = g.boards.find(b => String(b.fid) === String(fid)); if (hit) return hit.name; }
+            const fs = (lastData && lastData.kind === 'home' ? lastData.favorites : []) || [];
+            const fav = fs.find(b => String(b.fid) === String(fid));
+            if (fav) return fav.name;
+            return '';
+        };
+        (sidebarRecent() || []).forEach(t => {
+            const fid = String(t.fid || '');
+            if (!fid || seen.has(fid) || savedIds.has(fid) || favIds.has(fid)) return;
+            seen.add(fid);
+            out.push({ fid, name: nameOf(fid) || ('fid ' + fid) });
+        });
+        return out.slice(0, 8);
+    }
+
+    // Filter without re-rendering: toggling display keeps focus in the search box.
+    function filterHome(q) {
+        homeQuery = q;
+        const rootEl = document.querySelector('#cad__root');
+        if (!rootEl) return;
+        const needle = q.trim().toLowerCase();
+        let shown = 0, total = 0;
+        rootEl.querySelectorAll('.cad-board-card').forEach(card => {
+            total++;
+            const hay = ((card.dataset.name || '') + ' ' + (card.dataset.fid || '')).toLowerCase();
+            const hit = !needle || hay.includes(needle);
+            card.style.display = hit ? '' : 'none';
+            if (hit) shown++;
+        });
+        rootEl.querySelectorAll('.cad-home-sect').forEach(sec => {
+            const grid = sec.querySelector('.cad-board-grid');
+            const any = grid ? [...grid.children].some(c => c.style.display !== 'none') : false;
+            sec.style.display = any ? '' : 'none';
+        });
+        const count = rootEl.querySelector('.cad-home-count');
+        if (count) count.textContent = needle
+            ? (shown ? shown + ' of ' + total + ' boards' : 'No boards match "' + q.trim() + '"')
+            : total + ' boards';
+    }
+
+    const HomeView = () => {
+        const data = lastData || { kind: 'home', groups: [] };
+        const saved = boards || [];
+        const favorites = data.favorites || [];
+        const savedIds = new Set(saved.map(s => String(s.fid)));
+        const mineIds = new Set([...savedIds, ...favorites.map(f => String(f.fid))]);
+        const recent = homeRecentBoards();
+        // Saved and favorited boards move out of their groups: the two "mine"
+        // sections are the one place for them.
+        const groups = (data.groups || [])
+            .map(g => ({ name: g.name, boards: g.boards.filter(b => !mineIds.has(String(b.fid))) }))
+            .filter(g => g.boards.length);
+        const total = favorites.length + saved.length + recent.length + groups.reduce((a, g) => a + g.boards.length, 0);
+        const boardCard = b => {
+            const isSaved = saved.some(s => String(s.fid) === String(b.fid));
+            return html`<div class="cad-board-card" data-name=${b.name} data-fid=${b.fid}>
+                <a href=${'/thread.php?fid=' + encodeURIComponent(b.fid)} title=${'fid ' + b.fid}>
+                    <span class="cad-board-name">${b.name}</span>
+                    <span class="cad-board-fid">fid ${b.fid}</span>
+                </a>
+                <button type="button" class="cad-board-save" disabled=${isSaved} title=${isSaved ? 'Saved to sidebar' : 'Save to sidebar'} onClick=${() => saveHomeBoard(b.fid, b.name)}>${isSaved ? 'Saved ✓' : '+ Save'}</button>
+            </div>`;
+        };
+        const section = (label, list, key) => list.length ? html`<div class="cad-home-sect" key=${key}>
+            <div class="cad-line"><span class="cad-sect">${label}</span></div>
+            <div class="cad-board-grid">${list.map(boardCard)}</div>
+        </div>` : null;
+        return html`<div>
+            <div class="cad-home-head">
+                <div class="cad-home-title">Boards</div>
+                <div class="cad-home-kicker">Pick a board to open · press / to search</div>
+            </div>
+            <div class="cad-home-search-wrap">
+                <input type="search" class="cad-home-search" placeholder="Search boards by name or fid…" aria-label="Search boards"
+                    value=${homeQuery}
+                    ref=${el => { if (el && !homeFocused) { homeFocused = true; el.focus(); } }}
+                    onInput=${e => filterHome(e.target.value)} />
+            </div>
+            <div class="cad-home-count">${total ? total + ' boards' : ''}</div>
+            ${section('Favorite boards', favorites, 'favorites')}
+            ${section('Saved', saved, 'saved')}
+            ${section('Recent', recent, 'recent')}
+            ${groups.map((g, i) => section(g.name || 'Boards', g.boards, 'g' + i))}
+            ${!total ? html`<div class="cad-home-empty">
+                <div><b>No board groups found on this page.</b></div>
+                <div class="cad-faint">Saved boards and fid search still work — open a board with board fid &lt;fid&gt;, or pick one from the sidebar.</div>
+            </div>` : null}
+        </div>`;
+    };
+
     const IdleView = () => html`<div>
         <div class="cad-line">No thread or board list on this page.</div>
         <div class="cad-line cad-faint">The disguise reads #m_posts and #m_threads. Other pages stay idle.</div>
@@ -3928,6 +4272,12 @@
 
     const ClaudeView = ({ data }) => {
         const cwd = cwdFor(data);
+        if (data.kind === 'home') {
+            return html`<div>
+                <${CmdLine} cwd=${cwd} cmd=${'open ~/boards'} />
+                <${HomeView} />
+            </div>`;
+        }
         if (data.kind === 'topics') {
             return html`<div>
                 <${Welcome} cwd=${cwd} />
@@ -3954,6 +4304,15 @@
 
     const CodexView = ({ data }) => {
         const cwd = cwdFor(data);
+        if (data.kind === 'home') {
+            return html`<div>
+                <${CodexBanner} />
+                <div class="cad-blocktag">user</div>
+                <div class="cad-line">Pick a board to open</div>
+                <div class="cad-blocktag">codex</div>
+                <${HomeView} />
+            </div>`;
+        }
         if (data.kind === 'topics') {
             return html`<div>
                 <${CodexBanner} />
@@ -3984,8 +4343,20 @@
     };
 
     const AutoLoadState = () => {
-        if (autoPageLoading) return html`<div class="cad-statusline cad-faint" role="status">Loading the next page…</div>`;
-        if (autoPageError) return html`<div class="cad-statusline cad-error" role="alert"><button type="button" class="cad-action cad-idlebtn" onClick=${() => loadNextPage()}>Could not load the next page. Retry</button></div>`;
+        if (autoPageLoading) {
+            let nextNo = '';
+            try { nextNo = nextPageUrl ? (new URL(nextPageUrl).searchParams.get('page') || '') : ''; } catch (err) { /* keep empty */ }
+            return html`<div role="status" aria-live="polite">
+                <div class="cad-statusline cad-faint">Loading${nextNo ? ' page ' + nextNo : ' the next page'}…</div>
+                <div class="cad-skel" aria-hidden="true"><div class="cad-skel-head"></div><div class="cad-skel-line"></div><div class="cad-skel-line cad-skel-short"></div></div>
+                <div class="cad-skel" aria-hidden="true"><div class="cad-skel-head"></div><div class="cad-skel-line"></div><div class="cad-skel-line cad-skel-short"></div></div>
+            </div>`;
+        }
+        if (autoPageError) return html`<div class="cad-statusline cad-error" role="alert">
+            <span>Could not load the next page.</span>
+            <button type="button" class="cad-action cad-idlebtn" onClick=${() => loadNextPage()}>Retry</button>
+            <button type="button" class="cad-action" onClick=${() => runCmd('autopage')}>Turn autopage off</button>
+        </div>`;
         const list = lastData && (lastData.posts || lastData.topics);
         if (store.opOnly && !(lastData && lastData.posts && lastData.posts.some(p => p.isOP && !p.sep)) && !autoPageLoading) {
             const msg = autoPageError
@@ -3993,8 +4364,14 @@
                 : (opUidSticky ? 'No OP posts on this page. Loading the authorid view…' : 'No original-poster uid on this page.');
             return html`<div class="cad-statusline cad-faint">${msg}</div>`;
         }
-        if (store.autopage && (opModeOn() ? opEnd : !nextPageUrl) && list && list.some(x => x.sep))
-            return html`<div class="cad-statusline cad-faint">End of pages</div>`;
+        if (store.autopage && (opModeOn() ? opEnd : !nextPageUrl) && list && list.some(x => x.sep)) {
+            const bounds = pagerBounds();
+            const loaded = 1 + list.filter(x => x.sep).length;
+            return html`<div class="cad-statusline cad-end">
+                <span>End of pages${bounds.max ? ' · ' + loaded + ' of ' + bounds.max + ' pages' : ''}</span>
+                <button type="button" class="cad-action cad-idlebtn" onClick=${() => { if (bodyEl) { try { bodyEl.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { bodyEl.scrollTop = 0; } } }}>Back to top ↑</button>
+            </div>`;
+        }
         return null;
     };
 
@@ -4114,7 +4491,7 @@
         const recent = sidebarRecent();
         const cur = String(pageFid() || '');
         ensureFavs();
-        return html`<aside class="cad-side">
+        return html`<aside class=${'cad-side' + (sideOpen ? ' cad-side-open' : '')}>
             <div class="cad-side-top">
                 <span class="cad-traffic" aria-hidden="true"><i></i><i></i><i></i></span>
                 <button type="button" class="cad-action" title="Switch client style" onClick=${() => cycleTheme()}>${store.style === 'claude' ? 'Codex' : 'Claude'}</button>
@@ -4129,6 +4506,7 @@
                 <span>${store.style === 'claude' ? 'New thread' : 'New task'}</span>
                 <span class="cad-kbd">/post</span>
             </button>
+            <a class=${lastData && lastData.kind === 'home' ? 'cad-onitem' : ''} href="/" title="Boards home"><${HomeIcon} /><span>Home</span></a>
             <div class="cad-side-label">Boards</div>
             ${boardList.length ? boardList.map(b => html`<a class=${String(b.fid) === cur ? 'cad-onitem' : ''} href=${'/thread.php?fid=' + encodeURIComponent(b.fid)} title=${'fid ' + b.fid}>${store.style === 'claude' ? html`<${FolderIcon} />` : html`<span class="cad-side-dot"></span>`}<span>${b.name}</span></a>`) : html`<button type="button" class="cad-sideitem" onClick=${() => runCmd('board add')}><span>Save this board</span></button>`}
             ${cur && !boardList.some(b => String(b.fid) === cur) ? html`<button type="button" class="cad-sideitem" onClick=${() => runCmd('board add')}><span>Save this board</span></button>` : null}
@@ -4150,14 +4528,18 @@
         const ctx = viewBits();
         const board = (data && data.board) || pageBoardName() || 'board';
         const title = data && data.kind === 'posts' ? data.title : '';
+        const bounds = pagerBounds();
+        const atFirst = bounds.cur <= 1 && !bounds.hasPrev;
+        const atLast = data.kind === 'home' || (bounds.max > 0 && bounds.cur >= bounds.max && !bounds.hasNext);
         return html`<div class="cad-topbar">
+            <button type="button" class="cad-action cad-topbar-btn cad-menu-btn" aria-label="Boards and favorites" onClick=${() => { sideOpen = !sideOpen; renderApp(); }}>☰</button>
             <span class="cad-crumb">${board}${title ? '  /  ' + title : ''}</span>
             <span class="cad-pill">${pageLabel()}</span>
-            ${ctx.sort ? html`<button type="button" class="cad-pill" onClick=${() => runCmd(ctx.sort === 'latest post' ? 'sort reply' : 'sort post')}>${ctx.sort}</button>` : null}
+            ${ctx.sort && data && (data.kind === 'topics' || data.kind === 'posts') ? html`<button type="button" class="cad-pill" onClick=${() => runCmd(ctx.sort === 'latest post' ? 'sort reply' : 'sort post')}>${ctx.sort}</button>` : null}
             ${ctx.filter ? html`<button type="button" class="cad-pill" onClick=${() => runCmd(store.opOnly ? 'op' : 'author off')}>${ctx.filter}</button>` : null}
             <span style="flex:1"></span>
-            <button type="button" class="cad-action cad-topbar-btn" onClick=${() => pageNav(-1)}>‹ Prev</button>
-            <button type="button" class="cad-action cad-topbar-btn" onClick=${() => pageNav(1)}>Next ›</button>
+            <button type="button" class="cad-action cad-topbar-btn" disabled=${atFirst} aria-label="Previous page" onClick=${() => pageNav(-1)}>‹ Prev</button>
+            <button type="button" class="cad-action cad-topbar-btn" disabled=${atLast} aria-label="Next page" onClick=${() => pageNav(1)}>Next ›</button>
             <button type="button" class="cad-action cad-topbar-btn" onClick=${() => { store.mode = store.mode === 'dark' ? 'light' : 'dark'; applyAttrs(); renderApp(); }}>${store.mode}</button>
             <button type="button" class="cad-action cad-topbar-btn" onClick=${() => toggleCover()}>Esc</button>
         </div>`;
@@ -4251,7 +4633,8 @@
         if (store.on) {
             build();
             setFavicon(true);
-            focusPrompt();
+            // On the board picker the search box takes focus, not the prompt.
+            if (!lastData || lastData.kind !== 'home') focusPrompt();
         } else applyAttrs();
         if (startupGuard) clearTimeout(startupGuard);
     }
@@ -4337,8 +4720,18 @@
             sidebarFavorites,
             sidebarRecent,
             discoverPageBoards,
+            extractHome,
+            isIndexPage,
             isUidLabel,
             getPanel: () => panel,
+            loadNextPage,
+            appendPage,
+            maybeAutoLoad,
+            refresh,
+            pagerBounds,
+            maxPageNo,
+            getAutoPage: () => ({ loading: autoPageLoading, error: autoPageError, next: nextPageUrl, guessed: nextPageGuessed }),
+            getLastData: () => lastData,
             getPending: () => pendingReply,
             getTyped: () => typed,
             setTyped: v => { typed = v; },
