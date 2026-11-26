@@ -9,7 +9,7 @@ A Tampermonkey script that shows NGA (`bbs.nga.cn`, `ngabbs.com`, `bbs.ngacn.cc`
 ## Install
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/).
-2. Open [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js).
+2. Open [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/browser-scripts/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js).
 
 `@updateURL` and `@downloadURL` point at that file on `main`.
 

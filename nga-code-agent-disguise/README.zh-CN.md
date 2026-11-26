@@ -9,7 +9,7 @@ Tampermonkey 脚本。把 NGA（`bbs.nga.cn`、`ngabbs.com`、`bbs.ngacn.cc`、`
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)。
-2. 打开 [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js)。
+2. 打开 [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/browser-scripts/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js)。
 
 `@updateURL` 和 `@downloadURL` 指向 `main` 上的这个文件。
 

@@ -1,6 +1,6 @@
 # browser-scripts
 
-Userscripts for Tampermonkey and Violentmonkey. The GitHub repository will be renamed to `browser-scripts`. Until that rename, install links use the current name, `aromaw/nga-code-agent-disguise`.
+Userscripts for Tampermonkey and Violentmonkey. Install links use `aromaw/browser-scripts`.
 
 ## Install
 
@@ -14,7 +14,7 @@ Userscripts for Tampermonkey and Violentmonkey. The GitHub repository will be re
 
 Shows NGA (`bbs.nga.cn`, `ngabbs.com`, `bbs.ngacn.cc`, `nga.178.com`) as a Claude or Codex desktop session.
 
-- Install: [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js)
+- Install: [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/browser-scripts/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js)
 - Notes: [English](nga-code-agent-disguise/README.md), [中文](nga-code-agent-disguise/README.zh-CN.md)
 
 The script used to live at the repository root. The old raw URL (`/nga-code-agent-disguise.user.js`) no longer serves it. Copies that are already installed keep working, but they will not see later updates until you reinstall from the link above. The script's behavior is unchanged.
@@ -23,7 +23,7 @@ The script used to live at the repository root. The old raw URL (`/nga-code-agen
 
 Switches a page between a light and a dark appearance, per site. The default is off, so a site stays as it is until you choose a mode. It follows the site's own theme switch when that switch is a normal `data-theme`, `class="dark"`, or `prefers-color-scheme` hook, and otherwise inverts the page while putting images, video, and canvas back.
 
-- Install: [readable-theme.user.js](https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/readable-theme/readable-theme.user.js)
+- Install: [readable-theme.user.js](https://raw.githubusercontent.com/aromaw/browser-scripts/main/readable-theme/readable-theme.user.js)
 - Shortcut: `Alt+Shift+L` cycles Off → Light → Dark
 - Userscript menu: Light, Dark, Off, and show or hide the floating button
 

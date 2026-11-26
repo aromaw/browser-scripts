@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const nga = path.join(root, 'nga-code-agent-disguise', 'nga-code-agent-disguise.user.js');
 const oldUrl = 'https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise.user.js';
-const newUrl = 'https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js';
+const newUrl = 'https://raw.githubusercontent.com/aromaw/browser-scripts/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js';
 
 test('the NGA script lives in its own folder and publishes the new update URL', () => {
     assert.equal(fs.existsSync(path.join(root, 'nga-code-agent-disguise.user.js')), false);

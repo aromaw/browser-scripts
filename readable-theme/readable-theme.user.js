@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Readable Theme
-// @namespace    https://github.com/aromaw/nga-code-agent-disguise
+// @namespace    https://github.com/aromaw/browser-scripts
 // @version      1.0.0
 // @description  Force a readable light or dark appearance per site. Uses the site's own theme when it has one, otherwise inverts the page and restores images. Default off.
 // @author       aromaw
@@ -13,8 +13,8 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_unregisterMenuCommand
 // @grant        unsafeWindow
-// @updateURL    https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/readable-theme/readable-theme.user.js
-// @downloadURL  https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/readable-theme/readable-theme.user.js
+// @updateURL    https://raw.githubusercontent.com/aromaw/browser-scripts/main/readable-theme/readable-theme.user.js
+// @downloadURL  https://raw.githubusercontent.com/aromaw/browser-scripts/main/readable-theme/readable-theme.user.js
 // ==/UserScript==
 
 (function () {

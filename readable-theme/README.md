@@ -15,7 +15,7 @@ The Python tutorial is light. A second press darkens it:
 ## Install
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
-2. Open [readable-theme.user.js](https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/readable-theme/readable-theme.user.js).
+2. Open [readable-theme.user.js](https://raw.githubusercontent.com/aromaw/browser-scripts/main/readable-theme/readable-theme.user.js).
 
 `@updateURL` and `@downloadURL` point at that file on `main`. The script runs at `document-start` on all http(s) pages, and not inside frames.
 
