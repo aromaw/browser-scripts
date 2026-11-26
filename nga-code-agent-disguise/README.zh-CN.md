@@ -9,9 +9,11 @@ Tampermonkey 脚本。把 NGA（`bbs.nga.cn`、`ngabbs.com`、`bbs.ngacn.cc`、`
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)。
-2. 打开 [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise.user.js)。
+2. 打开 [nga-code-agent-disguise.user.js](https://raw.githubusercontent.com/aromaw/browser-scripts/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js)。
 
 `@updateURL` 和 `@downloadURL` 指向 `main` 上的这个文件。
+
+脚本文件已从仓库根目录移到这个文件夹。旧的根目录安装地址不再提供脚本。已经装上的副本还能用，但不会再收到更新，需要从上面的链接重新安装。除此之外行为不变。
 
 ## 阅读
 

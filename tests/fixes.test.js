@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 
-const source = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise.user.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise', 'nga-code-agent-disguise.user.js'), 'utf8');
 const liveThread = fs.readFileSync(path.join(__dirname, 'fixtures', 'live-nga-thread.html'), 'utf8');
 const liveBoard = fs.readFileSync(path.join(__dirname, 'fixtures', 'live-nga-board.html'), 'utf8');
 const authorFilter = fs.readFileSync(path.join(__dirname, 'fixtures', 'author-filter.html'), 'utf8');
@@ -462,7 +462,7 @@ test('sidebar splits Favorites from Recent', () => {
 });
 
 test('the main column is a little wider than 92ch', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise.user.js'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise', 'nga-code-agent-disguise.user.js'), 'utf8');
     assert.match(src, /max-width:\s*110ch/);
     assert.equal(/max-width:\s*92ch/.test(src), false);
 });
@@ -545,7 +545,7 @@ test('debug names is hidden from the slash menu', () => {
     const { cad } = load(emptyHtml, 'https://bbs.nga.cn/read.php?tid=1');
     const hits = cad.slashHits('/');
     assert.equal(hits.some(h => /debug/.test(typeof h === 'string' ? h : (h.cmd || h.name || JSON.stringify(h)))), false);
-    const src = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise.user.js'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise', 'nga-code-agent-disguise.user.js'), 'utf8');
     assert.equal(/const CMDS = \[[^\]]*debug names/.test(src), false);
     assert.match(src, /m === 'debug names'/);
 });

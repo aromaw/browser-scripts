@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 
-const source = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise.user.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise', 'nga-code-agent-disguise.user.js'), 'utf8');
 const threadHtml = fs.readFileSync(path.join(__dirname, 'fixtures', 'thread.html'), 'utf8');
 const listHtml = fs.readFileSync(path.join(__dirname, 'fixtures', 'thread-list.html'), 'utf8');
 const emptyHtml = '<!doctype html><html><head><title>Empty - NGA</title></head><body><p>home</p><textarea id="native"></textarea></body></html>';
