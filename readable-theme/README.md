@@ -25,11 +25,11 @@ The Python tutorial is light. A second press darkens it:
 
 The userscript menu has **Light**, **Dark**, **Off**, and **Show floating button** / **Hide floating button**. The button is hidden until you turn it on. It sits at the bottom right, at low opacity until you hover it. Click cycles the mode. Shift-click hides it again. The menu choice is remembered for every site; the mode is remembered per host.
 
-Off removes the script's changes. The site's own theme storage is put back when this script was the thing that edited it.
+Off removes the script's changes and puts back theme storage this script edited. If the site itself painted the forced mode from the patched media query, Off reloads the page so that startup script can read the real preference.
 
 ## How it chooses a method
 
-1. It patches `matchMedia` so `prefers-color-scheme` reports the mode you picked. That is enough for sites whose own script follows the media query.
+1. It patches `matchMedia` so a `prefers-color-scheme` feature reports the mode you picked. The rest of a compound query, including `max-width` and `not`, is still evaluated. That is enough for sites whose own script follows the media query.
 2. It edits a theme hook only when the page already uses one and the value is a scheme token: `data-theme`, `data-color-mode`, `data-bs-theme`, a `dark` / `light` class, a known `localStorage` key (`theme`, `vitepress-theme-appearance`, `starlight-theme`, and a few others), or MkDocs Material's `data-md-color-scheme` (`default` / `slate`). A value such as `data-theme="claude"`, or MDN's `data-theme="light dark"`, is not treated as a switch.
 3. It checks the painted background. If the site's own theme landed on the color you asked for, that is the result. If it did not, the script reverts those edits and sets `filter: invert(1) hue-rotate(180deg)` on the page. `img`, `video`, `canvas`, `iframe`, and inline background images get the same filter again so they keep their colors. Inline SVG icons invert with the text.
 

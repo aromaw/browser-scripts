@@ -157,6 +157,66 @@ test('prefers-color-scheme emulation follows the site theme instead of inverting
     }
 });
 
+test('compound matchMedia queries keep their other conditions', { timeout: 30000 }, async () => {
+    const host = new URL(origin).host;
+    const { context, page } = await newPage(browser, {
+        colorScheme: 'dark',
+        seed: { ['s:' + host]: { mode: 'light', strategy: 'asis', edits: [] } },
+    });
+    try {
+        await page.goto(origin + '/light.html', { waitUntil: 'domcontentloaded' });
+        await waitSettled(page);
+        const result = await page.evaluate(() => ({
+            plain: matchMedia('(prefers-color-scheme: light)').matches,
+            narrow: matchMedia('(prefers-color-scheme: light) and (max-width: 1px)').matches,
+            notDark: matchMedia('not (prefers-color-scheme: dark)').matches,
+            notLight: matchMedia('not (prefers-color-scheme: light)').matches,
+            darkAndWide: matchMedia('(prefers-color-scheme: dark) and (min-width: 1px)').matches,
+        }));
+        assert.equal(result.plain, true);
+        assert.equal(result.narrow, false);
+        assert.equal(result.notDark, true);
+        assert.equal(result.notLight, false);
+        assert.equal(result.darkAndWide, false);
+    } finally {
+        await context.close();
+    }
+});
+
+test('turning emulation off reloads a media-driven theme back to the system scheme', { timeout: 30000 }, async () => {
+    const host = new URL(origin).host;
+    const { context, page } = await newPage(browser, {
+        colorScheme: 'dark',
+        seed: { ['s:' + host]: { mode: 'light', strategy: null, edits: [] } },
+    });
+    try {
+        await page.goto(origin + '/native.html', { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('h1');
+        await waitSettled(page);
+        assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'light');
+        assert.equal(await page.evaluate(() => GM_getValue('s:' + location.host).strategy), 'asis');
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+            page.evaluate(() => {
+                window.__gmMenus.filter((entry) => entry && !entry.dead && entry.name.indexOf('Off') !== -1).pop().fn();
+            }).catch(() => {}),
+        ]);
+        await page.waitForSelector('h1');
+        const state = await page.evaluate(() => ({
+            theme: document.documentElement.getAttribute('data-theme'),
+            mode: GM_getValue('s:' + location.host).mode,
+            filter: document.documentElement.classList.contains('rt-filter'),
+        }));
+        assert.equal(state.mode, 'off');
+        assert.equal(state.theme, 'dark');
+        assert.equal(state.filter, false);
+        const sample = await sampleMain(page);
+        assert.ok(luminance(sample.px) < 0.25, 'restored background ' + sample.px.join(','));
+    } finally {
+        await context.close();
+    }
+});
+
 test('a stored dark theme is switched with the site attribute, not the filter', { timeout: 30000 }, async () => {
     const { context, page } = await newPage(browser, {
         extraInit: "localStorage.setItem('theme','dark');",

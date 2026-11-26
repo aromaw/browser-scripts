@@ -234,6 +234,18 @@
         return null;
     }
 
+    // Keep the rest of a compound query. Only the scheme feature is rewritten,
+    // so "(prefers-color-scheme: light) and (max-width: 1px)" stays narrow.
+    function rewriteSchemeQuery(query, mode) {
+        // Swap the feature in place. "(prefers-color-scheme: light)" becomes
+        // "(min-width: 0px)" or "(min-width: 1000000px)", so surrounding
+        // "and", "or", and "not" keep their meaning. A bare media type like
+        // "all" cannot be parenthesized; browsers treat "(all)" as false.
+        return String(query).replace(/prefers-color-scheme\s*:\s*(light|dark)/gi, (_, scheme) => {
+            return String(scheme).toLowerCase() === mode ? 'min-width: 0px' : 'min-width: 1000000px';
+        });
+    }
+
     if (globalThis.__RT_TEST) {
         globalThis.__rt = {
             VERSION: VERSION,
@@ -244,6 +256,7 @@
             parseColor: parseColor,
             relLuminance: relLuminance,
             surfaceMatches: surfaceMatches,
+            rewriteSchemeQuery: rewriteSchemeQuery,
             SCHEME_ATTRS: SCHEME_ATTRS,
             STORAGE_KEYS: STORAGE_KEYS,
         };
@@ -553,18 +566,29 @@
         if (!originalMatchMedia) originalMatchMedia = w.matchMedia.bind(w);
         const orig = originalMatchMedia;
         w.matchMedia = function (query) {
-            const mql = orig(query);
-            const match = /prefers-color-scheme\s*:\s*(light|dark)/i.exec(String(query));
-            if (!match) return mql;
-            const matches = match[1].toLowerCase() === mode;
+            const text = String(query);
+            if (!/prefers-color-scheme\s*:/i.test(text)) return orig(text);
+            const rewritten = rewriteSchemeQuery(text, mode);
+            const mql = orig(rewritten);
+            if (rewritten === text) return mql;
             return new Proxy(mql, {
                 get(target, prop) {
-                    if (prop === 'matches') return matches;
+                    if (prop === 'media') return text;
                     const value = Reflect.get(target, prop, target);
                     return typeof value === 'function' ? value.bind(target) : value;
                 },
             });
         };
+    }
+
+    function systemMode() {
+        try {
+            const w = pageWin();
+            const mq = w.matchMedia('(prefers-color-scheme: dark)');
+            return mq && mq.matches ? 'dark' : 'light';
+        } catch (err) {
+            return null;
+        }
     }
 
     function unpatchMatchMedia() {
@@ -816,16 +840,28 @@
         if (mode !== 'light' && mode !== 'dark' && mode !== 'off') return;
         const gen = ++generation;
         fights = 0;
+        const previousMode = current.mode;
+        const previousStrategy = current.strategy;
         if (current.edits && current.edits.length) revertEdits(current.edits);
         clearVisual();
         unpatchMatchMedia();
         current = { mode: mode, strategy: null, edits: [] };
         save();
-        const label = mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'Off';
-        showToast(label);
         installMenu();
         ensureButton();
-        if (mode === 'off') return;
+        if (mode === 'off') {
+            // The site's own startup script may have painted this mode from the
+            // patched media query without leaving an edit we can revert. Reload
+            // so that script runs against the real preference.
+            const drifted = previousStrategy === 'asis' && previousMode && previousMode !== systemMode();
+            if (drifted) {
+                try { pageWin().location.reload(); } catch (err) { /* ignore */ }
+                return;
+            }
+            showToast('Off');
+            return;
+        }
+        showToast(mode === 'light' ? 'Light' : 'Dark');
         ensureStyle();
         patchMatchMedia(mode);
         setWant(mode);

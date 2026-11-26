@@ -98,6 +98,17 @@ test('luminance treats docs backgrounds as light or dark', () => {
     assert.equal(rt.surfaceMatches('light', null), null);
 });
 
+test('scheme emulation keeps the other conditions in a compound query', () => {
+    const narrow = rt.rewriteSchemeQuery('(prefers-color-scheme: light) and (max-width: 1px)', 'light');
+    assert.equal(narrow, '(min-width: 0px) and (max-width: 1px)');
+
+    const negated = rt.rewriteSchemeQuery('not (prefers-color-scheme: dark)', 'light');
+    assert.equal(negated, 'not (min-width: 1000000px)');
+
+    const opposite = rt.rewriteSchemeQuery('(prefers-color-scheme: dark) and (min-width: 1px)', 'light');
+    assert.equal(opposite, '(min-width: 1000000px) and (min-width: 1px)');
+});
+
 test('png helper round-trips a solid color', () => {
     const decoded = decodePng(solidPng(2, 2, 255, 0, 0));
     assert.deepEqual(decoded.get(0, 0), [255, 0, 0, 255]);
