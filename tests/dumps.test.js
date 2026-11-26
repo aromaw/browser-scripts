@@ -7,7 +7,7 @@ const { JSDOM } = require('jsdom');
 const DUMP_DIR = '/workspace/nga-dom';
 const DUMP_INDEX = path.join(DUMP_DIR, 'index.json');
 const present = fs.existsSync(DUMP_INDEX);
-const source = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise.user.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'nga-code-agent-disguise', 'nga-code-agent-disguise.user.js'), 'utf8');
 
 function neutralize(html) {
     return html.replace(/<script\b([^>]*)>/gi, (m, attrs) => {

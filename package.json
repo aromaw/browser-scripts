@@ -1,9 +1,10 @@
 {
-  "name": "nga-code-agent-disguise",
+  "name": "browser-scripts",
   "private": true,
   "scripts": {
-    "test": "node --test tests/disguise.test.js tests/fixes.test.js tests/dumps.test.js",
-    "shots": "node tests/shots.js"
+    "test": "node --test tests/layout.test.js tests/readable-theme.test.js tests/readable-theme-browser.test.js tests/disguise.test.js tests/fixes.test.js tests/dumps.test.js",
+    "shots": "node tests/shots.js",
+    "theme-shots": "node tests/theme-shots.js"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",

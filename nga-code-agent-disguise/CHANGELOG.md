@@ -1,5 +1,7 @@
 # Changelog
 
+The script file now lives at `nga-code-agent-disguise/nga-code-agent-disguise.user.js`. `@updateURL` and `@downloadURL` point at that path. The root URL no longer serves the script. Behavior of the versions below is unchanged.
+
 ## 4.1.7 — 2026-11-18
 
 ### Added: "Favorite boards" module on the home page

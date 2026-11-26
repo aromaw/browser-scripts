@@ -8,8 +8,8 @@
 // @match        *://ngabbs.com/*
 // @match        *://bbs.ngacn.cc/*
 // @match        *://nga.178.com/*
-// @updateURL    https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise.user.js
-// @downloadURL  https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise.user.js
+// @updateURL    https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js
+// @downloadURL  https://raw.githubusercontent.com/aromaw/nga-code-agent-disguise/main/nga-code-agent-disguise/nga-code-agent-disguise.user.js
 // @run-at       document-start
 // @grant        GM_addStyle
 // @grant        GM_setValue
